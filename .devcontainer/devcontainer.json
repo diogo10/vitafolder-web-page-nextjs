@@ -1,18 +1,27 @@
 {
+  "name": "Next.js (Node 22)",
   "build": {
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "context": ".."
   },
-  "forwardPorts": [
-    3000
-  ],
-  "name": "Flutter",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Next.js",
+      "onAutoForward": "notify"
+    }
+  },
+  "remoteUser": "node",
   "customizations": {
     "vscode": {
       "extensions": [
-        "Dart-Code.dart-code",
-        "Dart-Code.flutter"
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ms-vscode.vscode-typescript-next"
       ]
     }
   },
+  "postCreateCommand": "if [ -f package.json ]; then npm install; else echo 'No package.json found, skipping npm install.'; fi",
   "postStartCommand": "git config --global --add safe.directory \"${containerWorkspaceFolder}\" && git pull && ./.devcontainer/bakehub-setup.sh de1a0447-da26-41e3-868c-83d8d57c75bc"
 }
