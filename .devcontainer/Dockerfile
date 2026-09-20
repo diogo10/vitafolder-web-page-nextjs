@@ -15,7 +15,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && rm -rf /var/lib/apt/lists/*
 
 # Install opencode (used by bakehub-setup.sh)
-RUN curl -fsSL https://opencode.ai/install | bash
+RUN curl -fsSL https://opencode.ai/v2/install | bash
 
 # Next.js / npm tweaks: enable telemetry opt-out by default, speed up installs
 ENV NEXT_TELEMETRY_DISABLED=1 \
