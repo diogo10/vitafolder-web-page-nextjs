@@ -14,8 +14,13 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install opencode (used by bakehub-setup.sh)
-RUN curl -fsSL https://opencode.ai/v2/install | bash
+# Install opencode (used by bakehub-setup.sh).
+# postStartCommand runs as `node` via non-interactive /bin/sh, so a .bashrc
+# PATH entry is not enough: install as `node` and expose via ENV + symlink.
+ENV PATH="/home/node/.opencode/bin:${PATH}"
+RUN HOME=/home/node su node -c "curl -fsSL https://opencode.ai/v2/install | bash -s -- --no-modify-path" \
+    && ln -sf /home/node/.opencode/bin/opencode /usr/local/bin/opencode \
+    && opencode --version
 
 # Next.js / npm tweaks: enable telemetry opt-out by default, speed up installs
 ENV NEXT_TELEMETRY_DISABLED=1 \
