@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FamilyAdmin — Join your family circle</title>
+    <meta
+      name="description"
+      content="Join your private family circle on FamilyAdmin and bring calm back to your household management."
+    />
+    <style>
+      :root {
+        --page: #faf9f6;
+        --panel: #e4dace;
+        --brand: #8b7355;
+        --brand-strong: #7a6348;
+        --heading: #634f39;
+        --muted: #b8a080;
+        --tan: #c9b99a;
+        --line: #f0ebe3;
+        --card: #ffffff;
+        --ink: #1a1a1a;
+        --amber-bg: #fffbeb;
+        --amber: #f59e0b;
+        --blue-bg: #eff6ff;
+        --blue: #3b82f6;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--page);
+        color: var(--heading);
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          "Helvetica Neue",
+          Arial,
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      /* Header */
+      .site-header {
+        background: var(--card);
+        border-bottom: 1px solid var(--line);
+      }
+      .site-header-inner {
+        max-width: 1080px;
+        margin: 0 auto;
+        height: 67px;
+        padding: 0 60px 0 56px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .brand-mark {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        background: var(--brand);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 6px 14px rgba(139, 115, 85, 0.35);
+      }
+      .brand-name {
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        color: var(--heading);
+      }
+      .header-note {
+        font-size: 10.5px;
+        color: var(--muted);
+        letter-spacing: 0.01em;
+      }
+      /* Layout */
+      .page {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 0 48px;
+      }
+      .hero {
+        display: grid;
+        grid-template-columns: 1.02fr 1fr;
+        gap: 26px 28px;
+        padding: 102px 34px 0 78px;
+        align-items: start;
+      }
+      h1 {
+        margin: 0;
+        font-size: 45px;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        font-weight: 800;
+        color: var(--heading);
+      }
+      .lede {
+        margin: 18px 0 0;
+        font-size: 15px;
+        line-height: 1.6;
+        color: var(--muted);
+        max-width: 430px;
+      }
+      .lede strong {
+        color: var(--brand-strong);
+        font-weight: 700;
+      }
+      /* Feature cards */
+      .features {
+        list-style: none;
+        margin: 34px 0 0;
+        padding: 0;
+        display: grid;
+        gap: 8px;
+        max-width: 430px;
+      }
+      .feature {
+        background: var(--card);
+        border: 0.75px solid var(--line);
+        border-radius: 18px;
+        padding: 16px 18px;
+        display: flex;
+        gap: 15px;
+        align-items: flex-start;
+        box-shadow: 0 1px 2px rgba(99, 79, 57, 0.04);
+      }
+      .feature-icon {
+        width: 42px;
+        height: 42px;
+        flex: none;
+        border-radius: 13px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .feature-icon.amber {
+        background: var(--amber-bg);
+      }
+      .feature-icon.blue {
+        background: var(--blue-bg);
+      }
+      .feature h2 {
+        margin: 2px 0 0;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--heading);
+      }
+      .feature p {
+        margin: 4px 0 0;
+        font-size: 10.5px;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+      /* Social proof */
+      .proof {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 40px;
+      }
+      .avatars {
+        display: flex;
+        align-items: center;
+      }
+      .avatars img {
+        width: 27px;
+        height: 27px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 1.5px solid #fff;
+        background: var(--line);
+      }
+      .avatars img + img {
+        margin-left: -9px;
+      }
+      .proof-badge {
+        margin-left: -9px;
+        min-width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--page);
+        border: 1.5px solid #fff;
+        outline: 1px solid var(--line);
+        color: var(--tan);
+        font-size: 9px;
+        font-weight: 700;
+        line-height: 1.15;
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2px 4px;
+        text-align: center;
+      }
+      .proof p {
+        margin: 0;
+        font-size: 10.5px;
+        color: var(--tan);
+      }
+      /* Invite panel */
+      .panel {
+        background: var(--panel);
+        border-radius: 40px;
+        padding: 26px 44px;
+        margin-top: -26px;
+      }
+      .invite {
+        background: var(--card);
+        border: 0.75px solid var(--line);
+        border-radius: 30px;
+        padding: 31px 30px 48px;
+        text-align: center;
+        box-shadow: 0 12px 30px rgba(99, 79, 57, 0.08);
+      }
+      .invite h2 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--heading);
+      }
+      .invite-sub {
+        margin: 8px 0 0;
+        font-size: 10.5px;
+        color: var(--muted);
+      }
+      .field {
+        text-align: left;
+        margin-top: 28px;
+      }
+      .field label {
+        display: block;
+        font-size: 7.5px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        color: var(--brand);
+        margin: 0 0 8px 3px;
+      }
+      .input {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--page);
+        border: 0.75px solid var(--line);
+        border-radius: 13px;
+        padding: 0 16px;
+        height: 52px;
+      }
+      .input svg {
+        flex: none;
+      }
+      .input input {
+        border: 0;
+        background: transparent;
+        outline: none;
+        width: 100%;
+        height: 100%;
+        font: inherit;
+        font-size: 13.5px;
+        color: var(--heading);
+      }
+      .input input::placeholder {
+        color: var(--tan);
+      }
+      .btn {
+        margin-top: 18px;
+        width: 100%;
+        border: 0;
+        cursor: pointer;
+        background: var(--brand);
+        color: #fff;
+        border-radius: 16px;
+        height: 62px;
+        font: inherit;
+        font-size: 13.5px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        box-shadow: 0 10px 20px rgba(139, 115, 85, 0.3);
+      }
+      .btn:hover {
+        background: #7a6348;
+      }
+      .invite-divider {
+        border: 0;
+        border-top: 1px solid var(--page);
+        margin: 34px 0 0;
+      }
+      .invite-note {
+        margin: 22px auto 0;
+        max-width: 300px;
+        font-size: 8.2px;
+        line-height: 1.7;
+        color: var(--tan);
+      }
+      .privacy-link {
+        display: inline-block;
+        margin-top: 10px;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--brand);
+        text-decoration: none;
+      }
+      .privacy-sub {
+        margin: 6px 0 0;
+        font-size: 12px;
+        color: var(--ink);
+      }
+      /* Footer */
+      .site-footer {
+        background: var(--card);
+        border-top: 1px solid var(--line);
+        margin-top: 84px;
+      }
+      .site-footer-inner {
+        max-width: 1080px;
+        margin: 0 auto;
+        min-height: 85px;
+        padding: 28px 60px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .copyright {
+        margin: 0;
+        font-size: 9px;
+        color: var(--muted);
+      }
+      .footer-nav {
+        display: flex;
+        gap: 34px;
+      }
+      .footer-nav a {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+        text-decoration: none;
+      }
+      .footer-nav a:hover {
+        color: var(--brand);
+      }
+      @media (max-width: 900px) {
+        .site-header-inner {
+          padding: 0 20px;
+        }
+        .hero {
+          grid-template-columns: 1fr;
+          padding: 56px 20px 0;
+        }
+        h1 {
+          font-size: 36px;
+        }
+        .features {
+          max-width: none;
+        }
+        .panel {
+          margin-top: 8px;
+          padding: 18px;
+          border-radius: 28px;
+        }
+        .site-footer-inner {
+          padding: 24px 20px;
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header-inner">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M8 1.5 1.8 6.7c-.3.25-.28.72.05.94.3.2.72.14.95-.12l.7-.6v5.33c0 .96.78 1.75 1.75 1.75h5.5c.97 0 1.75-.79 1.75-1.75V6.92l.7.6c.23.26.65.32.95.12.33-.22.35-.69.05-.94L8 1.5Z"
+                fill="#fff"
+              />
+              <circle cx="8" cy="8.6" r="1.35" fill="#8b7355" />
+              <path
+                d="M6.55 11.4c.35-.85.85-1.3 1.45-1.3s1.1.45 1.45 1.3c.1.25-.08.53-.36.53H6.91c-.28 0-.46-.28-.36-.53Z"
+                fill="#8b7355"
+              />
+            </svg>
+          </span>
+          <span class="brand-name">FamilyAdmin</span>
+        </div>
+        <span class="header-note">Invitation System</span>
+      </div>
+    </header>
+
+    <main class="page">
+      <div class="hero">
+        <section aria-labelledby="join-heading">
+          <h1 id="join-heading">Your family is<br />waiting for you.</h1>
+          <p class="lede">
+            Join your private family circle on <strong>FamilyAdmin</strong> and bring calm back to
+            your household management.
+          </p>
+          <ul class="features">
+            <li class="feature">
+              <span class="feature-icon amber" aria-hidden="true">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M10 2.5a4.5 4.5 0 0 0-4.5 4.5v2.7L4 11.6c-.24.35 0 .9.42.9h11.16c.42 0 .66-.55.42-.9l-1.5-1.9V7a4.5 4.5 0 0 0-4.5-4.5ZM8.2 14.6a1.85 1.85 0 0 0 3.6 0H8.2Z"
+                    fill="#f59e0b"
+                  />
+                </svg>
+              </span>
+              <div>
+                <h2>Smart Reminders</h2>
+                <p>Stay synced on meds, chores, and school runs.</p>
+              </div>
+            </li>
+            <li class="feature">
+              <span class="feature-icon blue" aria-hidden="true">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <rect x="3" y="4" width="14" height="13" rx="2.5" fill="#3b82f6" />
+                  <rect x="3" y="4" width="14" height="4" rx="2" fill="#93c5fd" />
+                  <rect x="6" y="2" width="2" height="4" rx="1" fill="#3b82f6" />
+                  <rect x="12" y="2" width="2" height="4" rx="1" fill="#3b82f6" />
+                  <rect x="6.5" y="10.5" width="2.4" height="2.4" rx="0.7" fill="#eff6ff" />
+                  <rect x="9.7" y="10.5" width="2.4" height="2.4" rx="0.7" fill="#eff6ff" />
+                  <rect x="6.5" y="13.5" width="2.4" height="2.4" rx="0.7" fill="#eff6ff" />
+                  <rect x="9.7" y="13.5" width="2.4" height="2.4" rx="0.7" fill="#eff6ff" />
+                </svg>
+              </span>
+              <div>
+                <h2>Shared Calendar</h2>
+                <p>One view for the whole household&rsquo;s schedule.</p>
+              </div>
+            </li>
+          </ul>
+          <div class="proof">
+            <div class="avatars" aria-hidden="true">
+              <img src="avatar-1.jpg" alt="" width="27" height="27" />
+              <img src="avatar-2.jpg" alt="" width="27" height="27" />
+              <img src="avatar-3.jpg" alt="" width="27" height="27" />
+              <span class="proof-badge"><span>+12k</span><span>families</span></span>
+            </div>
+            <p>Join 12,000+ active circles</p>
+          </div>
+        </section>
+
+        <section class="panel" aria-label="Invitation">
+          <div class="invite">
+            <h2>Get Started</h2>
+            <p class="invite-sub">Enter your email to join the circle</p>
+            <form action="#" method="get">
+              <div class="field">
+                <label for="email">EMAIL ADDRESS</label>
+                <div class="input">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <rect x="1.5" y="3" width="13" height="10" rx="2" fill="#c9b99a" />
+                    <path
+                      d="m3 5.5 5 3.5 5-3.5"
+                      stroke="#faf9f6"
+                      stroke-width="1.4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="name@example.com"
+                    autocomplete="email"
+                    required
+                  />
+                </div>
+              </div>
+              <button class="btn" type="submit">
+                Join Family Circle
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M2.5 8h10M9 4.5 12.5 8 9 11.5"
+                    stroke="#fff"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </form>
+            <hr class="invite-divider" />
+            <p class="invite-note">
+              By joining, you&rsquo;ll get instant access to the shared family dashboard.
+            </p>
+            <a class="privacy-link" href="#">Learn more</a>
+            <p class="privacy-sub">about our commitment to privacy.</p>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="site-footer-inner">
+        <p class="copyright">&copy; 2026 FamilyAdmin. All household data is encrypted.</p>
+        <nav class="footer-nav" aria-label="Footer">
+          <a href="#">PRIVACY</a>
+          <a href="#">TERMS</a>
+          <a href="#">SUPPORT</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>
