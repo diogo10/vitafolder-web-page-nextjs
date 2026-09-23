@@ -24,7 +24,7 @@ export default async function JoinFamilyPage({ searchParams }: JoinFamilyPagePro
     <div className="min-h-screen bg-[#faf9f6] font-sans text-[#634f39]">
       <JoinHeader />
       <main className="mx-auto w-full max-w-[1080px] pb-12">
-        <div className="grid items-start gap-7 px-5 pt-14 lg:grid-cols-[1.02fr_1fr] lg:gap-[26px_28px] lg:px-[34px_34px_0_78px] lg:pt-[102px]">
+        <div className="grid items-start gap-7 px-5 pt-14 lg:grid-cols-[1.02fr_1fr] lg:gap-[26px_28px] lg:pl-[78px] lg:pr-[34px] lg:pt-[102px]">
           <JoinIntro />
           <JoinPanel initialEmail={initialEmail} initialCode={initialCode} />
         </div>

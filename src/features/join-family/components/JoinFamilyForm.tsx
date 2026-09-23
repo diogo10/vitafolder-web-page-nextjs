@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { extractEmail, extractInviteCode } from "../lib/invite";
+import { joinFamilyAction } from "../actions";
 import { joinFamilySchema } from "../schemas";
 
 type JoinFamilyFormProps = {
@@ -19,6 +20,7 @@ export function JoinFamilyForm({ initialEmail = "", initialCode = "" }: JoinFami
   );
   const [errors, setErrors] = useState<{ email?: string; inviteCode?: string }>({});
   const [submitted, setSubmitted] = useState(false);
+  const [isPending, setIsPending] = useState(false);
 
   // Sync from the URL on client-side navigation without clobbering user input
   // or server-provided initial values.
@@ -34,15 +36,16 @@ export function JoinFamilyForm({ initialEmail = "", initialCode = "" }: JoinFami
   }, [searchParams]);
 
   // Sync when the server provides new initial values (e.g. fresh ?code= navigation).
+  // Guard against clobbering user input: only fill empty fields.
   useEffect(() => {
-    if (initialEmail) setEmail(initialEmail);
+    if (initialEmail) setEmail((current) => current || initialEmail);
   }, [initialEmail]);
 
   useEffect(() => {
-    if (initialCode) setInviteCode(initialCode);
+    if (initialCode) setInviteCode((current) => current || initialCode);
   }, [initialCode]);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const result = joinFamilySchema.safeParse({ email, inviteCode });
     if (!result.success) {
@@ -58,7 +61,18 @@ export function JoinFamilyForm({ initialEmail = "", initialCode = "" }: JoinFami
       return;
     }
     setErrors({});
-    setSubmitted(true);
+    setIsPending(true);
+    try {
+      const actionResult = await joinFamilyAction({ email, inviteCode });
+      if (!actionResult.ok) {
+        setErrors(actionResult.errors);
+        setSubmitted(false);
+        return;
+      }
+      setSubmitted(true);
+    } finally {
+      setIsPending(false);
+    }
   }
 
   return (
@@ -154,9 +168,10 @@ export function JoinFamilyForm({ initialEmail = "", initialCode = "" }: JoinFami
 
         <button
           type="submit"
-          className="mt-[18px] inline-flex h-[62px] w-full items-center justify-center gap-3 rounded-2xl bg-brand text-[13.5px] font-bold text-white shadow-[0_10px_20px_rgba(139,115,85,0.3)] transition-colors hover:bg-[#7a6348]"
+          disabled={isPending}
+          className="mt-[18px] inline-flex h-[62px] w-full items-center justify-center gap-3 rounded-2xl bg-brand text-[13.5px] font-bold text-white shadow-[0_10px_20px_rgba(139,115,85,0.3)] transition-colors hover:bg-[#7a6348] disabled:opacity-70"
         >
-          Join Family Circle
+          {isPending ? "Joining…" : "Join Family Circle"}
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path
               d="M2.5 8h10M9 4.5 12.5 8 9 11.5"
