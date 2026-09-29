@@ -43,7 +43,7 @@ export function DemoModal({ open, onClose }: DemoModalProps) {
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label="FamilyAdmin product demo"
+        aria-label="HouseMira product demo"
         className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"
       >
         <div className="flex items-center justify-between border-b border-line px-5 py-4">
@@ -77,7 +77,7 @@ export function DemoModal({ open, onClose }: DemoModalProps) {
                 <path d="M8 5.5v13l11-6.5-11-6.5Z" />
               </svg>
             </span>
-            <p className="mt-4 text-sm font-semibold text-ink">A two-minute tour of FamilyAdmin</p>
+            <p className="mt-4 text-sm font-semibold text-ink">A two-minute tour of HouseMira</p>
             <p className="mt-1 text-xs text-mist">
               Demo video coming soon — start for free to explore the live product today.
             </p>

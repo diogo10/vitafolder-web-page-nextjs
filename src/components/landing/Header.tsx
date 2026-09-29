@@ -34,7 +34,7 @@ export function Header() {
       )}
     >
       <div className="mx-auto flex h-16 w-full max-w-[1080px] items-center justify-between px-5 sm:px-8">
-        <Link href="#top" aria-label="FamilyAdmin home">
+        <Link href="#top" aria-label="HouseMira home">
           <Logo />
         </Link>
         <nav aria-label="Primary" className="hidden items-center gap-8 sm:flex">

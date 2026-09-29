@@ -1,4 +1,4 @@
-# AGENTS.md — Next.js (App Router + TypeScript)
+# AGENTS.md — HouseMira (Next.js App Router + TypeScript)
 
 ## Stack
 

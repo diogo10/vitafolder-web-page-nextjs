@@ -13,8 +13,8 @@ export function JoinIntro() {
       </h1>
       <p className="mt-[18px] max-w-[430px] text-[15px] leading-[1.6] text-[#b8a080]">
         Join your private family circle on{" "}
-        <strong className="font-bold text-[#7a6348]">FamilyAdmin</strong> and bring calm back to
-        your household management.
+        <strong className="font-bold text-[#7a6348]">HouseMira</strong> and bring calm back to your
+        household management.
       </p>
       <ul className="mt-[34px] grid max-w-[430px] gap-2">
         <li className="flex items-start gap-[15px] rounded-[18px] border border-[#f0ebe3] bg-white p-4 shadow-[0_1px_2px_rgba(99,79,57,0.04)]">

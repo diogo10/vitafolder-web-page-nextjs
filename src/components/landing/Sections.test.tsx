@@ -45,7 +45,7 @@ describe("CtaSection", () => {
 describe("Footer", () => {
   it("renders copyright and legal links", () => {
     render(<Footer />);
-    expect(screen.getByText(/© 2026 familyadmin/i)).toBeInTheDocument();
+    expect(screen.getByText(/© 2026 housemira/i)).toBeInTheDocument();
     for (const name of [/privacy/i, /^terms$/i, /support/i]) {
       expect(screen.getByRole("link", { name })).toBeInTheDocument();
     }
