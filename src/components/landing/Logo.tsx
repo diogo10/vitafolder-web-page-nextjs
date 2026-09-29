@@ -31,7 +31,7 @@ export function Logo({ className }: LogoProps) {
         />
         <circle cx="12" cy="12.5" r="1.6" fill="currentColor" />
       </svg>
-      <span className="text-[15px] font-semibold text-ink">FamilyAdmin</span>
+      <span className="text-[15px] font-semibold text-ink">HouseMira</span>
     </span>
   );
 }

@@ -6,9 +6,9 @@ import { JoinPanel } from "@/features/join-family/components/JoinPanel";
 import { extractEmail, extractInviteCode } from "@/features/join-family/lib/invite";
 
 export const metadata: Metadata = {
-  title: "FamilyAdmin — Join your family circle",
+  title: "HouseMira — Join your family circle",
   description:
-    "Join your private family circle on FamilyAdmin and bring calm back to your household management.",
+    "Join your private family circle on HouseMira and bring calm back to your household management.",
 };
 
 type JoinFamilyPageProps = {

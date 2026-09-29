@@ -1,13 +1,13 @@
 import { expect, test } from "@playwright/test";
 
-test("homepage matches the FamilyAdmin design", async ({ page }) => {
+test("homepage matches the HouseMira design", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /run your home like a pro/i })).toBeVisible();
   await expect(page.getByRole("link", { name: /^features$/i }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: /start for free/i }).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: /everything your family needs/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: /three taps to a calmer home/i })).toBeVisible();
-  await expect(page.getByText(/© 2026 familyadmin/i)).toBeVisible();
+  await expect(page.getByText(/© 2026 housemira/i)).toBeVisible();
 });
 
 test("watch demo opens and closes the dialog", async ({ page }) => {

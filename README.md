@@ -1,2 +1,3 @@
-# vitafolder-web-page-nextjs
-Created with BakeAgent
+# HouseMira
+
+Family home management web app (Next.js).

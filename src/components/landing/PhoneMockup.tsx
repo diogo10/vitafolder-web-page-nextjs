@@ -25,7 +25,7 @@ export function PhoneMockup() {
   return (
     <div
       role="img"
-      aria-label="Preview of the FamilyAdmin app showing the Smith family circle and today's tasks"
+      aria-label="Preview of the HouseMira app showing the Smith family circle and today's tasks"
       className="mx-auto w-full max-w-[300px] overflow-hidden rounded-[28px] border border-line bg-white shadow-[0_16px_48px_rgba(26,26,26,0.10)]"
     >
       <div className="bg-cream px-5 pb-3 pt-3 text-center">
@@ -38,7 +38,7 @@ export function PhoneMockup() {
             height={21}
             className="h-[21px] w-[21px] rounded-full object-cover"
           />
-          FamilyAdmin
+          HouseMira
         </p>
       </div>
       <div className="px-5 py-4">

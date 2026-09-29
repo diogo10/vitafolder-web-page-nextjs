@@ -14,7 +14,7 @@ vi.mock("next/navigation", () => ({
 describe("JoinHeader", () => {
   it("renders brand and invitation note", () => {
     render(<JoinHeader />);
-    expect(screen.getByLabelText(/familyadmin home/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/housemira home/i)).toBeInTheDocument();
     expect(screen.getByText(/invitation system/i)).toBeInTheDocument();
   });
 });

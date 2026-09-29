@@ -25,8 +25,8 @@ export function HowItWorks() {
             Three taps to a calmer home
           </h2>
           <p className="mt-4 max-w-lg text-[13px] leading-relaxed text-mist">
-            Create a family circle, add your members, and start sharing tasks. FamilyAdmin learns
-            your routines and suggests what needs attention next — before you even think to ask.
+            Create a family circle, add your members, and start sharing tasks. HouseMira learns your
+            routines and suggests what needs attention next — before you even think to ask.
           </p>
           <ul className="mt-6 space-y-4">
             {CHECKLIST.map((item) => (

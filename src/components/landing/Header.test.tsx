@@ -6,7 +6,7 @@ import { Header } from "./Header";
 describe("Header", () => {
   it("renders brand and primary navigation", () => {
     render(<Header />);
-    expect(screen.getByLabelText(/familyadmin home/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/housemira home/i)).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: /primary/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /^features$/i })).toHaveAttribute("href", "#features");
     expect(screen.getByRole("link", { name: /^pricing$/i })).toHaveAttribute(

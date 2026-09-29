@@ -4,7 +4,7 @@ export function JoinHeader() {
   return (
     <header className="border-b border-[#f0ebe3] bg-white">
       <div className="mx-auto flex h-[67px] w-full max-w-[1080px] items-center justify-between px-5 sm:px-14">
-        <Link href="/" aria-label="FamilyAdmin home" className="inline-flex items-center gap-2.5">
+        <Link href="/" aria-label="HouseMira home" className="inline-flex items-center gap-2.5">
           <span
             aria-hidden="true"
             className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-[9px] bg-brand shadow-[0_6px_14px_rgba(139,115,85,0.35)]"
@@ -22,7 +22,7 @@ export function JoinHeader() {
             </svg>
           </span>
           <span className="text-[15px] font-extrabold tracking-[-0.01em] text-[#634f39]">
-            FamilyAdmin
+            HouseMira
           </span>
         </Link>
         <span className="text-[10.5px] tracking-[0.01em] text-[#b8a080]">Invitation System</span>

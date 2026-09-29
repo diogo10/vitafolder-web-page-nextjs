@@ -7,9 +7,9 @@ import { Hero } from "@/components/landing/Hero";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 
 export const metadata: Metadata = {
-  title: "FamilyAdmin — Run your home like a pro",
+  title: "HouseMira — Run your home like a pro",
   description:
-    "FamilyAdmin brings your calendar, reminders, and shared lists into one calm, private space — so everyone stays in the loop without the chaos.",
+    "HouseMira brings your calendar, reminders, and shared lists into one calm, private space — so everyone stays in the loop without the chaos.",
 };
 
 export default function Home() {

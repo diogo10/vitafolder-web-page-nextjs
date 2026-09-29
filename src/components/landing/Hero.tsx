@@ -32,8 +32,8 @@ export function Hero() {
             like a pro.
           </h1>
           <p className="mt-5 max-w-md text-[15px] leading-relaxed text-mist sm:text-base">
-            FamilyAdmin brings your calendar, reminders, and shared lists into one calm, private
-            space — so everyone stays in the loop without the chaos.
+            HouseMira brings your calendar, reminders, and shared lists into one calm, private space
+            — so everyone stays in the loop without the chaos.
           </p>
           <div className="mt-7 flex flex-wrap items-center gap-3">
             <Link
@@ -76,7 +76,7 @@ export function Hero() {
           <div className="animate-float-soft">
             <Image
               src="/design/img-37.jpg"
-              alt="Family organizing their week together with FamilyAdmin"
+              alt="Family organizing their week together with HouseMira"
               width={462}
               height={462}
               priority
