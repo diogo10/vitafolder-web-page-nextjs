@@ -6,14 +6,24 @@ import { Footer } from "./Footer";
 import { HowItWorks } from "./HowItWorks";
 
 describe("Features", () => {
-  it("renders all three feature cards", () => {
+  it("renders all feature cards including shared notes", () => {
     render(<Features />);
     expect(
       screen.getByRole("heading", { name: /everything your family needs/i })
     ).toBeInTheDocument();
-    for (const name of [/smart reminders/i, /shared calendar/i, /private family circles/i]) {
+    for (const name of [
+      /smart reminders/i,
+      /shared calendar/i,
+      /shared notes/i,
+      /private family circles/i,
+    ]) {
       expect(screen.getByRole("heading", { name })).toBeInTheDocument();
     }
+    expect(screen.getByRole("heading", { name: /shared notes/i })).toBeInTheDocument();
+    expect(
+      screen.getByText(/jot it down once, share it with your circle-family/i)
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /try shared notes/i })).not.toBeInTheDocument();
   });
 });
 

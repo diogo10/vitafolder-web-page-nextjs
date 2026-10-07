@@ -1,6 +1,12 @@
 import { Reveal } from "./Reveal";
 
-const FEATURES = [
+type Feature = {
+  title: string;
+  body: string;
+  icon: React.ReactNode;
+};
+
+const FEATURES: Feature[] = [
   {
     title: "Smart Reminders",
     body: "Set once, forget never. Medication, appointments, and school events surface at the right time for the right person.",
@@ -52,6 +58,25 @@ const FEATURES = [
     ),
   },
   {
+    title: "Shared Notes",
+    body: "Jot it down once, share it with your circle-family. Grocery lists, school pickups, and reminders — private to your circle, visible to everyone in it.",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M5 4.5h14a1 1 0 0 1 1 1V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5.5a1 1 0 0 1 1-1Z"
+          stroke="currentColor"
+          strokeWidth="1.8"
+        />
+        <path
+          d="M8.5 9h7M8.5 12.5h7M8.5 16h4"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+      </svg>
+    ),
+  },
+  {
     title: "Private Family Circles",
     body: "Invite parents, kids, and grandparents into their own secure circle. End-to-end encrypted, always.",
     icon: (
@@ -84,7 +109,7 @@ export function Features() {
             Replace scattered notes, group chats, and sticky labels with a single shared home hub.
           </p>
         </Reveal>
-        <ul className="mt-10 grid gap-5 sm:grid-cols-3">
+        <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {FEATURES.map((feature, index) => (
             <li key={feature.title}>
               <Reveal
