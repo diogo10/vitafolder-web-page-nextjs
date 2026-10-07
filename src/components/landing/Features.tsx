@@ -1,11 +1,8 @@
-import Link from "next/link";
 import { Reveal } from "./Reveal";
 
 type Feature = {
   title: string;
   body: string;
-  href?: string;
-  linkLabel?: string;
   icon: React.ReactNode;
 };
 
@@ -63,8 +60,6 @@ const FEATURES: Feature[] = [
   {
     title: "Shared Notes",
     body: "Jot it down once, share it with your circle-family. Grocery lists, school pickups, and reminders — private to your circle, visible to everyone in it.",
-    href: "/notes",
-    linkLabel: "Try shared notes",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path
@@ -126,15 +121,6 @@ export function Features() {
                 </span>
                 <h3 className="mt-4 text-[15px] font-semibold text-ink">{feature.title}</h3>
                 <p className="mt-2 text-[13px] leading-relaxed text-mist">{feature.body}</p>
-                {feature.href && feature.linkLabel ? (
-                  <Link
-                    href={feature.href}
-                    className="mt-3 inline-flex items-center gap-1 text-[13px] font-semibold text-brand underline-offset-4 hover:underline"
-                  >
-                    {feature.linkLabel}
-                    <span aria-hidden="true">→</span>
-                  </Link>
-                ) : null}
               </Reveal>
             </li>
           ))}

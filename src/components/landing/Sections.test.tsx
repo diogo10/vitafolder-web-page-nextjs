@@ -19,10 +19,11 @@ describe("Features", () => {
     ]) {
       expect(screen.getByRole("heading", { name })).toBeInTheDocument();
     }
-    expect(screen.getByRole("link", { name: /try shared notes/i })).toHaveAttribute(
-      "href",
-      "/notes"
-    );
+    expect(screen.getByRole("heading", { name: /shared notes/i })).toBeInTheDocument();
+    expect(
+      screen.getByText(/jot it down once, share it with your circle-family/i)
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /try shared notes/i })).not.toBeInTheDocument();
   });
 });
 
