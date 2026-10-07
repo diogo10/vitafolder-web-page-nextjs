@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 import { Logo } from "./Logo";
 
 const NAV_LINKS = [
-  { label: "Features", href: "#features" },
-  { label: "Pricing", href: "#get-started" },
+  { label: "Features", href: "/#features" },
+  { label: "Pricing", href: "/#get-started" },
 ];
 
 export function Header() {
@@ -34,7 +34,7 @@ export function Header() {
       )}
     >
       <div className="mx-auto flex h-16 w-full max-w-[1080px] items-center justify-between px-5 sm:px-8">
-        <Link href="#top" aria-label="HouseMira home">
+        <Link href="/" aria-label="HouseMira home">
           <Logo />
         </Link>
         <nav aria-label="Primary" className="hidden items-center gap-8 sm:flex">
@@ -48,7 +48,7 @@ export function Header() {
             </Link>
           ))}
           <Link
-            href="#get-started"
+            href="/#get-started"
             className="rounded-md bg-brand px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-brand-deep"
           >
             Get Started
@@ -115,7 +115,7 @@ export function Header() {
             ))}
             <li>
               <Link
-                href="#get-started"
+                href="/#get-started"
                 onClick={() => setMenuOpen(false)}
                 className="mt-1 block rounded-md bg-brand px-3 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-brand-deep"
               >
