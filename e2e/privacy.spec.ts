@@ -4,6 +4,9 @@ test("privacy page loads with policy content", async ({ page }) => {
   await page.goto("/privacy");
   await expect(page.getByRole("heading", { name: /privacy policy/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: /information we collect/i })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /notes and circle-family sharing/i })
+  ).toBeVisible();
   await expect(page.getByRole("heading", { name: /contact us/i })).toBeVisible();
 });
 

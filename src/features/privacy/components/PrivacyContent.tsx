@@ -35,8 +35,9 @@ export function PrivacyContent() {
       </h1>
       <p className="mt-3 text-sm text-faint">Effective date: {PRIVACY_EFFECTIVE_DATE}</p>
       <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-mist">
-        HouseMira brings your calendar, reminders, and shared lists into one calm, private space.
-        This foundational policy explains what we collect, how we use it, and the choices you have.
+        HouseMira brings your calendar, reminders, shared lists, and shared notes into one calm,
+        private space. This policy explains what we collect, how we use it, how circle-family note
+        sharing works, and the choices you have.
       </p>
 
       <nav
