@@ -10,8 +10,8 @@ test("privacy page loads with policy content", async ({ page }) => {
 test("footer privacy link navigates to the privacy page", async ({ page }) => {
   await page.goto("/");
   await page
+    .getByRole("contentinfo")
     .getByRole("link", { name: /^privacy$/i })
-    .first()
     .click();
   await expect(page).toHaveURL(/\/privacy/);
   await expect(page.getByRole("heading", { name: /privacy policy/i })).toBeVisible();

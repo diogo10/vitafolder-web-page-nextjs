@@ -1,4 +1,25 @@
-import { PRIVACY_EFFECTIVE_DATE, PRIVACY_SECTIONS } from "@/features/privacy/lib/content";
+import {
+  PRIVACY_CONTACT_EMAIL,
+  PRIVACY_EFFECTIVE_DATE,
+  PRIVACY_SECTIONS,
+} from "@/features/privacy/lib/content";
+
+function renderParagraphWithEmail(paragraph: string) {
+  const parts = paragraph.split(PRIVACY_CONTACT_EMAIL);
+  if (parts.length < 2) return paragraph;
+  return (
+    <>
+      {parts[0]}
+      <a
+        href={`mailto:${PRIVACY_CONTACT_EMAIL}`}
+        className="text-brand underline-offset-4 hover:underline"
+      >
+        {PRIVACY_CONTACT_EMAIL}
+      </a>
+      {parts.slice(1).join(PRIVACY_CONTACT_EMAIL)}
+    </>
+  );
+}
 
 export function PrivacyContent() {
   return (
@@ -51,15 +72,15 @@ export function PrivacyContent() {
             >
               {section.heading}
             </h2>
-            {section.body.map((paragraph) => (
-              <p key={paragraph.slice(0, 32)} className="mt-3 text-sm leading-relaxed text-mist">
-                {paragraph}
+            {section.body.map((paragraph, i) => (
+              <p key={`${section.id}-${i}`} className="mt-3 text-sm leading-relaxed text-mist">
+                {renderParagraphWithEmail(paragraph)}
               </p>
             ))}
             {section.bullets && (
               <ul className="mt-3 list-disc space-y-2 pl-5">
-                {section.bullets.map((bullet) => (
-                  <li key={bullet.slice(0, 32)} className="text-sm leading-relaxed text-mist">
+                {section.bullets.map((bullet, i) => (
+                  <li key={`${section.id}-${i}`} className="text-sm leading-relaxed text-mist">
                     {bullet}
                   </li>
                 ))}

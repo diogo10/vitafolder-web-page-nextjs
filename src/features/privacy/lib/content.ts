@@ -1,3 +1,5 @@
+import { env } from "@/lib/env";
+
 export type PrivacySection = {
   id: string;
   heading: string;
@@ -6,6 +8,8 @@ export type PrivacySection = {
 };
 
 export const PRIVACY_EFFECTIVE_DATE = "October 7, 2026";
+
+export const PRIVACY_CONTACT_EMAIL = env.NEXT_PUBLIC_PRIVACY_EMAIL;
 
 export const PRIVACY_SECTIONS: PrivacySection[] = [
   {
@@ -88,7 +92,7 @@ export const PRIVACY_SECTIONS: PrivacySection[] = [
     id: "contact",
     heading: "9. Contact us",
     body: [
-      "If you have questions about this Privacy Policy or your data, contact us at privacy@housemira.example. We aim to respond to all requests within 30 days.",
+      `If you have questions about this Privacy Policy or your data, contact us at ${PRIVACY_CONTACT_EMAIL}. We aim to respond to all requests within 30 days.`,
     ],
   },
 ];
