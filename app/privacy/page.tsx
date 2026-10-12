@@ -7,7 +7,7 @@ import { PrivacyContent } from "@/features/privacy/components/PrivacyContent";
 export const metadata: Metadata = {
   title: "HouseMira — Privacy Policy",
   description:
-    "Read how HouseMira collects, uses, and protects your household data across calendars, reminders, shared lists, and shared circle-family notes.",
+    "Read how HouseMira collects, uses, and protects your household data across calendars, reminders, and shared lists.",
 };
 
 export default function PrivacyPage() {

@@ -4,9 +4,7 @@ test("terms page loads with terms content", async ({ page }) => {
   await page.goto("/terms");
   await expect(page.getByRole("heading", { name: /terms and conditions/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: /agreement to these terms/i })).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: /shared notes and circle-family rules/i })
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: /acceptable use/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: /contact us/i })).toBeVisible();
 });
 

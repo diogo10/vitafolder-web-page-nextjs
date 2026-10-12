@@ -14,7 +14,6 @@ describe("PrivacyContent", () => {
     for (const name of [
       /information we collect/i,
       /how we use your information/i,
-      /notes and circle-family sharing/i,
       /sharing and disclosure/i,
       /data security/i,
       /contact us/i,
@@ -24,17 +23,20 @@ describe("PrivacyContent", () => {
     expect(screen.getByText(/we do not sell your personal information/i)).toBeInTheDocument();
   });
 
-  it("explains notes data collection, storage, and circle-scoped sharing", () => {
+  it("does not describe removed Shared Notes collection", () => {
     render(<PrivacyContent />);
-    expect(screen.getByText(/each note belongs to exactly one circle-family/i)).toBeInTheDocument();
-    expect(screen.getByText(/circles remain isolated/i)).toBeInTheDocument();
-    expect(screen.getByText(/deleting a note removes it for everyone/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /notes and circle-family sharing/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/each note belongs to exactly one circle-family/i)
+    ).not.toBeInTheDocument();
   });
 
   it("provides anchor navigation for each section", () => {
     render(<PrivacyContent />);
     const nav = screen.getByRole("navigation", { name: /privacy policy contents/i });
     expect(nav).toBeInTheDocument();
-    expect(nav.querySelectorAll("a").length).toBeGreaterThanOrEqual(10);
+    expect(nav.querySelectorAll("a").length).toBeGreaterThanOrEqual(9);
   });
 });

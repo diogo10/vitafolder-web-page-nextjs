@@ -35,9 +35,9 @@ export function TermsContent() {
       </h1>
       <p className="mt-3 text-sm text-faint">Effective date: {TERMS_EFFECTIVE_DATE}</p>
       <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-mist">
-        These terms govern your use of HouseMira calendars, reminders, shared lists, and shared
-        notes. They work alongside our Privacy Policy to explain circle-family sharing, acceptable
-        use, and your choices.
+        These terms govern your use of HouseMira calendars, reminders, and shared lists. They work
+        alongside our Privacy Policy to explain circle-family sharing, acceptable use, and your
+        choices.
       </p>
 
       <nav

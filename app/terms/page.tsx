@@ -7,7 +7,7 @@ import { TermsContent } from "@/features/terms/components/TermsContent";
 export const metadata: Metadata = {
   title: "HouseMira — Terms and Conditions",
   description:
-    "Read the HouseMira Terms and Conditions governing calendars, reminders, shared lists, and shared circle-family notes.",
+    "Read the HouseMira Terms and Conditions governing calendars, reminders, and shared lists.",
 };
 
 export default function TermsPage() {

@@ -6,8 +6,6 @@ test("homepage matches the HouseMira design", async ({ page }) => {
   await expect(page.getByRole("link", { name: /^features$/i }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: /start for free/i }).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: /everything your family needs/i })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /shared notes/i })).toBeVisible();
-  await expect(page.getByText(/jot it down once, share it with your circle-family/i)).toBeVisible();
   await expect(page.getByRole("heading", { name: /three taps to a calmer home/i })).toBeVisible();
   await expect(page.getByText(/© 2026 housemira/i)).toBeVisible();
 });
