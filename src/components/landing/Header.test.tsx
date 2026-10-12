@@ -9,10 +9,7 @@ describe("Header", () => {
     expect(screen.getByLabelText(/housemira home/i)).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: /primary/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /^features$/i })).toHaveAttribute("href", "/#features");
-    expect(screen.getByRole("link", { name: /^pricing$/i })).toHaveAttribute(
-      "href",
-      "/#get-started"
-    );
+    expect(screen.queryByRole("link", { name: /^pricing$/i })).not.toBeInTheDocument();
   });
 
   it("toggles the mobile menu open and closed", async () => {

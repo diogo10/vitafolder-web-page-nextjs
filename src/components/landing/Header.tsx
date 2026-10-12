@@ -5,10 +5,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Logo } from "./Logo";
 
-const NAV_LINKS = [
-  { label: "Features", href: "/#features" },
-  { label: "Pricing", href: "/#get-started" },
-];
+const NAV_LINKS = [{ label: "Features", href: "/#features" }];
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
