@@ -14,7 +14,6 @@ describe("TermsContent", () => {
     for (const name of [
       /agreement to these terms/i,
       /acceptable use/i,
-      /shared notes and circle-family rules/i,
       /privacy/i,
       /contact us/i,
     ]) {
@@ -23,19 +22,20 @@ describe("TermsContent", () => {
     expect(screen.getByText(/we do not sell your personal information/i)).toBeInTheDocument();
   });
 
-  it("explains notes circle-scoped sharing and deletion", () => {
+  it("does not describe removed Shared Notes rules", () => {
     render(<TermsContent />);
     expect(
-      screen.getByText(/each shared note belongs to exactly one circle-family/i)
-    ).toBeInTheDocument();
-    expect(screen.getByText(/circles remain isolated/i)).toBeInTheDocument();
-    expect(screen.getByText(/deleting a note removes it for everyone/i)).toBeInTheDocument();
+      screen.queryByRole("heading", { name: /shared notes and circle-family rules/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/each shared note belongs to exactly one circle-family/i)
+    ).not.toBeInTheDocument();
   });
 
   it("provides anchor navigation for each section", () => {
     render(<TermsContent />);
     const nav = screen.getByRole("navigation", { name: /terms and conditions contents/i });
     expect(nav).toBeInTheDocument();
-    expect(nav.querySelectorAll("a").length).toBeGreaterThanOrEqual(10);
+    expect(nav.querySelectorAll("a").length).toBeGreaterThanOrEqual(9);
   });
 });

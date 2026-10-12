@@ -9,7 +9,6 @@ describe("Header", () => {
     expect(screen.getByLabelText(/housemira home/i)).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: /primary/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /^features$/i })).toHaveAttribute("href", "/#features");
-    expect(screen.getByRole("link", { name: /^notes$/i })).toHaveAttribute("href", "/notes");
     expect(screen.getByRole("link", { name: /^pricing$/i })).toHaveAttribute(
       "href",
       "/#get-started"
