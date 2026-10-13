@@ -67,10 +67,44 @@ Env vars (see `.env.example`, validated in `src/lib/env.ts`):
 ```text
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 NEXT_PUBLIC_PRIVACY_EMAIL=privacy@housemira.com
-SUPABASE_URL=https://jheqalwrnztavzxjsdcj.supabase.co
+SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=[YOUR_ENV_KEY]
 SUPABASE_INVITE_FUNCTION_NAME=resend-email-v1
 ```
+
+`SUPABASE_URL` is required with no default: the app fails fast at startup
+with a clear message when it is missing, instead of silently targeting a
+hardcoded project. Empty strings are treated as unset
+(`src/lib/env.ts`). `SUPABASE_ANON_KEY` is optional at startup but required
+to actually send invites — without it the invite Server Action returns a
+configuration error before any network call.
+
+## Invite email authorization & abuse protection
+
+Sending email is an abuse vector, so the `/invite-family` flow is layered:
+
+- **Authorization boundary = the Supabase `resend-email-v1` Edge Function.**
+  The anon key sent as `Authorization: Bearer` + `apikey` headers is a public
+  client identifier, not a secrecy boundary. The Edge Function itself MUST
+  verify the caller's Supabase JWT (service-role check / allowlisted sender)
+  and enforce its own rate limits; otherwise anyone who learns the endpoint
+  can send email through it. This app has no session/auth yet — once app-level
+  auth lands, `sendInviteAction`
+  (`src/features/invite-family/actions.ts`) must additionally require a valid
+  session and fail closed (generic error) when there is none.
+- **Honeypot:** the form renders a hidden `website` input that humans never
+  fill. Submissions with a filled honeypot get a fake success and never reach
+  the Edge Function. For stronger bot protection, verify Cloudflare Turnstile
+  / reCAPTCHA in `sendInviteAction` before sending.
+- **Rate limiting:** a sliding-window limiter (5 requests/minute per sender
+  IP, resolved via `x-forwarded-for`) gates the Server Action
+  (`src/features/invite-family/lib/rate-limit.ts`). It is in-memory and
+  single-instance — production multi-instance deployments should use Upstash
+  Redis via `@upstash/ratelimit` instead.
+- **Error hygiene:** Edge Function status/detail is logged server-side with
+  `console.error` (truncated to 500 chars) and never surfaced — clients only
+  receive `Could not send invite. Try again.` (or the missing-key
+  configuration error).
 
 ## Commands
 

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { sendInviteAction } from "./actions";
+import { resetInviteRateLimits } from "./lib/rate-limit";
 import { sendInviteEmail } from "./lib/send-invite-email";
 
 vi.mock("./lib/send-invite-email", () => ({
@@ -18,6 +19,7 @@ const validInput = {
 
 beforeEach(() => {
   sendInviteEmailMock.mockReset();
+  resetInviteRateLimits();
 });
 
 describe("sendInviteAction", () => {
@@ -48,17 +50,43 @@ describe("sendInviteAction", () => {
     expect(sendInviteEmailMock).not.toHaveBeenCalled();
   });
 
-  it("maps a service failure to a form-level error", async () => {
+  it("maps a service failure to a generic form-level error", async () => {
     sendInviteEmailMock.mockResolvedValue({
       ok: false,
       status: 500,
-      error: "Email service responded with status 500.",
+      error: "Could not send invite. Try again.",
     });
     const result = await sendInviteAction(validInput);
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.errors).toEqual({});
-      expect(result.formError).toMatch(/status 500/);
+      expect(result.formError).toBe("Could not send invite. Try again.");
     }
+  });
+
+  it("returns a fallback form error when validation yields no field errors", async () => {
+    const result = await sendInviteAction(null);
+    expect(result).toEqual({ ok: false, errors: {}, formError: "Invalid input." });
+    expect(sendInviteEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("silently accepts honeypot submissions without calling the service", async () => {
+    const result = await sendInviteAction({ ...validInput, website: "http://spam.example" });
+    expect(result).toEqual({ ok: true });
+    expect(sendInviteEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("rate-limits repeated submissions", async () => {
+    sendInviteEmailMock.mockResolvedValue({ ok: true });
+    for (let i = 0; i < 5; i += 1) {
+      const result = await sendInviteAction(validInput, { rateLimitKey: "rate-limit-test" });
+      expect(result).toEqual({ ok: true });
+    }
+    const limited = await sendInviteAction(validInput, { rateLimitKey: "rate-limit-test" });
+    expect(limited.ok).toBe(false);
+    if (!limited.ok) {
+      expect(limited.formError).toMatch(/too many requests/i);
+    }
+    expect(sendInviteEmailMock).toHaveBeenCalledTimes(5);
   });
 });

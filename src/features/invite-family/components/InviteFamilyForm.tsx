@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { cn } from "@/lib/utils";
 import { sendInviteAction, type InviteFamilyActionErrors } from "../actions";
 import { inviteFamilySchema } from "../schemas";
@@ -31,12 +31,15 @@ export function InviteFamilyForm({ initialInviteCode = "" }: InviteFamilyFormPro
   const [inviterName, setInviterName] = useState("");
   const [familyName, setFamilyName] = useState("");
   const [inviteCode, setInviteCode] = useState(initialInviteCode);
+  // Honeypot: hidden from humans; bots that fill it are silently dropped by
+  // the Server Action (see `sendInviteAction`).
+  const [website, setWebsite] = useState("");
   const [errors, setErrors] = useState<InviteFamilyActionErrors>({});
   const [formError, setFormError] = useState("");
   const [sentTo, setSentTo] = useState("");
   const [isPending, setIsPending] = useState(false);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const parsed = inviteFamilySchema.safeParse({
       to,
@@ -52,7 +55,7 @@ export function InviteFamilyForm({ initialInviteCode = "" }: InviteFamilyFormPro
         if (field && !fieldErrors[field]) fieldErrors[field] = issue.message;
       }
       setErrors(fieldErrors);
-      setFormError("");
+      setFormError(Object.keys(fieldErrors).length === 0 ? "Invalid input." : "");
       setSentTo("");
       return;
     }
@@ -61,7 +64,7 @@ export function InviteFamilyForm({ initialInviteCode = "" }: InviteFamilyFormPro
     setSentTo("");
     setIsPending(true);
     try {
-      const result = await sendInviteAction(parsed.data);
+      const result = await sendInviteAction({ ...parsed.data, website });
       if (!result.ok) {
         setErrors(result.errors);
         setFormError(result.formError ?? "");
@@ -80,6 +83,18 @@ export function InviteFamilyForm({ initialInviteCode = "" }: InviteFamilyFormPro
         Send an email invitation to your family circle
       </p>
       <form onSubmit={handleSubmit} noValidate>
+        <div className="hidden" aria-hidden="true">
+          <label htmlFor="invite-website">Website</label>
+          <input
+            id="invite-website"
+            name="website"
+            type="text"
+            autoComplete="off"
+            tabIndex={-1}
+            value={website}
+            onChange={(event) => setWebsite(event.target.value)}
+          />
+        </div>
         <div className="mt-7 text-left">
           <label
             htmlFor="invite-to"

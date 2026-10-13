@@ -13,8 +13,19 @@ export type SendInviteEmailOverrides = {
 
 /**
  * POST an invite payload to the Supabase `resend-email-v1` Edge Function.
- * The Supabase anon key is sent as both the `Authorization: Bearer` token
- * and the `apikey` header, per the Edge Function contract.
+ *
+ * Authorization contract: the Supabase anon key is sent as both the
+ * `Authorization: Bearer` token and the `apikey` header, per the Edge
+ * Function contract. The anon key is a public client identifier, NOT a
+ * secrecy boundary — the Edge Function itself MUST verify the caller's
+ * Supabase JWT (service-role check / allowlisted sender) and enforce its own
+ * rate limits, otherwise anyone who learns the endpoint can send email
+ * through it. See README "Invite email authorization & abuse protection".
+ *
+ * Error contract: callers only ever receive the generic
+ * `Could not send invite. Try again.` message. Backend status/detail is
+ * logged server-side via `console.error` (truncated) and never surfaced to
+ * the client.
  */
 export async function sendInviteEmail(
   input: SendInviteEmailInput,
@@ -60,10 +71,12 @@ export async function sendInviteEmail(
   } catch {
     detail = "";
   }
-  const suffix = detail ? ` (${detail.slice(0, 200)})` : "";
+  console.error(
+    `[invite-family] Edge Function error: status=${response.status} detail=${detail.slice(0, 500)}`
+  );
   return {
     ok: false,
     status: response.status,
-    error: `Email service responded with status ${response.status}.${suffix}`,
+    error: "Could not send invite. Try again.",
   };
 }

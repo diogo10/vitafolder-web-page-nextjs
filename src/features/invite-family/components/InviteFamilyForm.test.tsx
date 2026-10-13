@@ -81,11 +81,11 @@ describe("InviteFamilyForm", () => {
     sendInviteActionMock.mockResolvedValue({
       ok: false,
       errors: {},
-      formError: "Email service responded with status 500.",
+      formError: "Could not send invite. Try again.",
     });
     render(<InviteFamilyForm />);
     await fillValidForm(user);
     await user.click(screen.getByRole("button", { name: /send invite/i }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(/status 500/);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/could not send invite/i);
   });
 });
