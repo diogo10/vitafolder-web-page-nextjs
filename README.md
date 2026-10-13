@@ -76,8 +76,9 @@ SUPABASE_INVITE_FUNCTION_NAME=resend-email-v1
 with a clear message when it is missing, instead of silently targeting a
 hardcoded project. Empty strings are treated as unset
 (`src/lib/env.ts`). `SUPABASE_ANON_KEY` is optional at startup but required
-to actually send invites — without it the invite Server Action returns a
-configuration error before any network call.
+to actually send invites — without it the invite Server Action returns the
+generic `Could not send invite. Try again.` error before any network call
+(the missing-key detail is logged server-side with `console.error` only).
 
 ## Invite email authorization & abuse protection
 
@@ -100,11 +101,23 @@ Sending email is an abuse vector, so the `/invite-family` flow is layered:
   IP, resolved via `x-forwarded-for`) gates the Server Action
   (`src/features/invite-family/lib/rate-limit.ts`). It is in-memory and
   single-instance — production multi-instance deployments should use Upstash
-  Redis via `@upstash/ratelimit` instead.
+  Redis via `@upstash/ratelimit` instead. `x-forwarded-for` trust boundary:
+  this header is client-controlled and can be spoofed, so only trust it when
+  the hosting platform / reverse proxy overwrites it (e.g. Vercel, Fly, or an
+  NGINX `proxy_set_header X-Forwarded-For $remote_addr` setup). Do not trust
+  a pass-through value from an untrusted proxy. When no IP can be resolved
+  the action fails closed (generic rate-limit error) instead of sharing a
+  global bucket.
 - **Error hygiene:** Edge Function status/detail is logged server-side with
   `console.error` (truncated to 500 chars) and never surfaced — clients only
-  receive `Could not send invite. Try again.` (or the missing-key
-  configuration error).
+  receive `Could not send invite. Try again.` (including when
+  `SUPABASE_ANON_KEY` is missing; the missing-key detail is logged
+  server-side only).
+- **Before enabling publicly:** prove `resend-email-v1` rejects
+  unauthenticated calls (Supabase JWT verification / allowlisted sender plus
+  a server-side rate limit on the Edge Function itself) with a live negative
+  test, or gate `sendInviteAction` behind a session check / Turnstile
+  verification first. Do not expose the form publicly on anon-key auth alone.
 
 ## Commands
 

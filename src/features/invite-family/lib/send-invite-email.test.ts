@@ -3,7 +3,7 @@ import { sendInviteEmail } from "./send-invite-email";
 
 const input = {
   to: "email@example.com",
-  locale: "en",
+  locale: "en" as const,
   inviterName: "John Doe",
   familyName: "Smith Family",
   inviteCode: "ABC-123",
@@ -95,7 +95,8 @@ describe("sendInviteEmail", () => {
     });
   });
 
-  it("returns a configuration error when the anon key is missing", async () => {
+  it("returns the generic error and logs when the anon key is missing", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const fetchFn = vi.fn(async () => okResponse());
     const result = await sendInviteEmail(input, {
       fetchFn: fetchFn as unknown as typeof fetch,
@@ -103,7 +104,11 @@ describe("sendInviteEmail", () => {
       anonKey: "",
     });
 
-    expect(result.ok).toBe(false);
+    expect(result).toEqual({
+      ok: false,
+      error: "Could not send invite. Try again.",
+    });
     expect(fetchFn).not.toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalledTimes(1);
   });
 });

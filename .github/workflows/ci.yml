@@ -52,7 +52,7 @@ jobs:
         run: npm run e2e
         env:
           # Placeholder URL + intentionally no SUPABASE_ANON_KEY: the invite
-          # Server Action short-circuits with a configuration error, so E2E
+          # Server Action short-circuits with a generic error, so E2E
           # specs never make live Supabase calls.
           SUPABASE_URL: https://example.supabase.co
   call-bob:

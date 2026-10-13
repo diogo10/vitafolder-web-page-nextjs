@@ -88,4 +88,13 @@ describe("InviteFamilyForm", () => {
     await user.click(screen.getByRole("button", { name: /send invite/i }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/could not send invite/i);
   });
+
+  it("keeps typed email when the invite-code prop changes", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<InviteFamilyForm initialInviteCode="AAA-111" />);
+    await user.type(screen.getByLabelText(/recipient email/i), "email@example.com");
+    rerender(<InviteFamilyForm initialInviteCode="BBB-222" />);
+    expect(screen.getByLabelText(/recipient email/i)).toHaveValue("email@example.com");
+    expect(screen.getByLabelText(/invite code/i)).toHaveValue("BBB-222");
+  });
 });

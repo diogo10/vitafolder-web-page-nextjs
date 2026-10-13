@@ -30,7 +30,13 @@ const envSchema = z.object({
   SUPABASE_ANON_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   SUPABASE_INVITE_FUNCTION_NAME: z.preprocess(
     emptyToUndefined,
-    z.string().min(1).default("resend-email-v1")
+    z
+      .string()
+      .regex(
+        /^[A-Za-z0-9][A-Za-z0-9_-]*$/,
+        "SUPABASE_INVITE_FUNCTION_NAME must be a valid Edge Function name (letters, numbers, dashes, underscores)."
+      )
+      .default("resend-email-v1")
   ),
 });
 
@@ -43,7 +49,10 @@ export const env = envSchema.parse({
   SUPABASE_INVITE_FUNCTION_NAME: process.env.SUPABASE_INVITE_FUNCTION_NAME,
 });
 
-export function getInviteEmailEndpoint(): string {
-  const baseUrl = env.SUPABASE_URL.replace(/\/$/, "");
-  return `${baseUrl}/functions/v1/${env.SUPABASE_INVITE_FUNCTION_NAME}`;
+export function getInviteEmailEndpoint(
+  baseUrl: string = env.SUPABASE_URL,
+  functionName: string = env.SUPABASE_INVITE_FUNCTION_NAME
+): string {
+  const normalizedBaseUrl = baseUrl.replace(/\/+$/, "");
+  return `${normalizedBaseUrl}/functions/v1/${functionName}`;
 }

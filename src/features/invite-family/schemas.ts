@@ -6,12 +6,10 @@ export const inviteFamilySchema = z.object({
     .trim()
     .min(1, "Enter the recipient's email address.")
     .email("Enter a valid email address."),
-  locale: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .regex(/^[a-z]{2}(-[a-z]{2})?$/, "Enter a valid locale (e.g. en).")
-    .default("en"),
+  locale: z.preprocess(
+    (value) => (typeof value === "string" ? value.trim().toLowerCase() : value),
+    z.enum(["en", "pt", "es"]).default("en")
+  ),
   inviterName: z.string().trim().min(1, "Enter your name.").max(100, "Your name is too long."),
   familyName: z
     .string()

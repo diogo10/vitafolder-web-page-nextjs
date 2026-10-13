@@ -37,9 +37,10 @@ export async function sendInviteEmail(
   const anonKey = overrides.anonKey ?? env.SUPABASE_ANON_KEY;
 
   if (!anonKey) {
+    console.error("[invite-family] missing SUPABASE_ANON_KEY — email service not configured.");
     return {
       ok: false,
-      error: "Email service is not configured. Set SUPABASE_ANON_KEY.",
+      error: "Could not send invite. Try again.",
     };
   }
 

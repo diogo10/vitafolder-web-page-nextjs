@@ -50,6 +50,11 @@ describe("inviteFamilySchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("rejects an unsupported locale", () => {
+    const result = inviteFamilySchema.safeParse({ ...validInput, locale: "fr" });
+    expect(result.success).toBe(false);
+  });
+
   it("rejects a missing inviter name", () => {
     const result = inviteFamilySchema.safeParse({ ...validInput, inviterName: "   " });
     expect(result.success).toBe(false);
