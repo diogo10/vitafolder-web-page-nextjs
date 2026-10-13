@@ -35,15 +35,26 @@ jobs:
 
       - name: Unit/integration tests with coverage
         run: npm run test:cov
+        env:
+          # SUPABASE_URL is required (no default); unit tests inject explicit
+          # endpoint/anonKey overrides, so a placeholder is enough here.
+          SUPABASE_URL: https://example.supabase.co
 
       - name: Production build
         run: npm run build
+        env:
+          SUPABASE_URL: https://example.supabase.co
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
       - name: E2E tests
         run: npm run e2e
+        env:
+          # Placeholder URL + intentionally no SUPABASE_ANON_KEY: the invite
+          # Server Action short-circuits with a generic error, so E2E
+          # specs never make live Supabase calls.
+          SUPABASE_URL: https://example.supabase.co
   call-bob:
     needs: [ci]
     permissions:

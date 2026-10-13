@@ -1,0 +1,160 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { executeSendInviteAction } from "./invite-action-core";
+import { resetInviteRateLimits } from "./rate-limit";
+import { sendInviteEmail } from "./send-invite-email";
+
+vi.mock("./send-invite-email", () => ({
+  sendInviteEmail: vi.fn(),
+}));
+
+const sendInviteEmailMock = vi.mocked(sendInviteEmail);
+
+const validInput = {
+  to: "email@example.com",
+  locale: "en",
+  inviterName: "John Doe",
+  familyName: "Smith Family",
+  inviteCode: "ABC-123",
+};
+
+beforeEach(() => {
+  sendInviteEmailMock.mockReset();
+  resetInviteRateLimits();
+});
+
+describe("executeSendInviteAction", () => {
+  it("sends the invite for a valid payload", async () => {
+    sendInviteEmailMock.mockResolvedValue({ ok: true });
+    const result = await executeSendInviteAction(validInput, {
+      rateLimitKey: "send-valid",
+    });
+    expect(result).toEqual({ ok: true });
+    expect(sendInviteEmailMock).toHaveBeenCalledWith({
+      ...validInput,
+    });
+  });
+
+  it("rejects an invalid recipient email without calling the service", async () => {
+    const result = await executeSendInviteAction({ ...validInput, to: "not-an-email" });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors.to).toMatch(/valid email/i);
+    }
+    expect(sendInviteEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a short invite code without calling the service", async () => {
+    const result = await executeSendInviteAction({ ...validInput, inviteCode: "ab" });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors.inviteCode).toMatch(/too short/i);
+    }
+    expect(sendInviteEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("maps a service failure to a generic form-level error", async () => {
+    sendInviteEmailMock.mockResolvedValue({
+      ok: false,
+      status: 500,
+      error: "Could not send invite. Try again.",
+    });
+    const result = await executeSendInviteAction(validInput, {
+      rateLimitKey: "send-service-failure",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors).toEqual({});
+      expect(result.formError).toBe("Could not send invite. Try again.");
+    }
+  });
+
+  it("returns a fallback form error when validation yields no field errors", async () => {
+    const result = await executeSendInviteAction(null);
+    expect(result).toEqual({ ok: false, errors: {}, formError: "Invalid input." });
+    expect(sendInviteEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("silently accepts honeypot submissions without calling the service", async () => {
+    const result = await executeSendInviteAction({ ...validInput, website: "http://spam.example" });
+    expect(result).toEqual({ ok: true });
+    expect(sendInviteEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("rate-limits repeated submissions", async () => {
+    sendInviteEmailMock.mockResolvedValue({ ok: true });
+    for (let i = 0; i < 5; i += 1) {
+      const result = await executeSendInviteAction(validInput, {
+        rateLimitKey: "rate-limit-test",
+      });
+      expect(result).toEqual({ ok: true });
+    }
+    const limited = await executeSendInviteAction(validInput, {
+      rateLimitKey: "rate-limit-test",
+    });
+    expect(limited.ok).toBe(false);
+    if (!limited.ok) {
+      expect(limited.formError).toMatch(/too many requests/i);
+    }
+    expect(sendInviteEmailMock).toHaveBeenCalledTimes(5);
+  });
+
+  it("does not rate-limit invalid requests", async () => {
+    sendInviteEmailMock.mockResolvedValue({ ok: true });
+    for (let i = 0; i < 6; i += 1) {
+      const result = await executeSendInviteAction({ ...validInput, to: "not-an-email" });
+      expect(result.ok).toBe(false);
+    }
+    const valid = await executeSendInviteAction(validInput, {
+      rateLimitKey: "invalid-not-counted",
+    });
+    expect(valid).toEqual({ ok: true });
+  });
+
+  it("fails closed when no rate-limit key can be resolved", async () => {
+    sendInviteEmailMock.mockResolvedValue({ ok: true });
+    const result = await executeSendInviteAction(validInput);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.formError).toMatch(/too many requests/i);
+    }
+    expect(sendInviteEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("requires a valid Turnstile token when a secret is configured", async () => {
+    sendInviteEmailMock.mockResolvedValue({ ok: true });
+    const requiresNonEmptyToken = async (token: string) => token !== "";
+
+    const missing = await executeSendInviteAction(validInput, {
+      rateLimitKey: "turnstile-missing",
+      turnstileSecret: "test-secret",
+      verifyTurnstile: requiresNonEmptyToken,
+    });
+    expect(missing.ok).toBe(false);
+    if (!missing.ok) {
+      expect(missing.formError).toMatch(/could not send invite/i);
+    }
+    expect(sendInviteEmailMock).not.toHaveBeenCalled();
+
+    const rejected = await executeSendInviteAction(validInput, {
+      rateLimitKey: "turnstile-rejected",
+      turnstileSecret: "test-secret",
+      verifyTurnstile: async (token) => token === "valid-token",
+    });
+    expect(rejected.ok).toBe(false);
+    if (!rejected.ok) {
+      expect(rejected.formError).toMatch(/could not send invite/i);
+    }
+    expect(sendInviteEmailMock).not.toHaveBeenCalled();
+
+    const accepted = await executeSendInviteAction(
+      { ...validInput, turnstileToken: "valid-token" },
+      {
+        rateLimitKey: "turnstile-accepted",
+        turnstileSecret: "test-secret",
+        verifyTurnstile: async (token) => token === "valid-token",
+      }
+    );
+    expect(accepted).toEqual({ ok: true });
+    expect(sendInviteEmailMock).toHaveBeenCalledTimes(1);
+  });
+});

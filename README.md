@@ -6,16 +6,17 @@ Live site: [https://housemira.com](https://housemira.com)
 
 ## Pages
 
-| Route          | Live URL                                                                                                                                                                                              | Description                                                                                                                                                                                                                   |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/`            | [https://housemira.com](https://housemira.com)                                                                                                                                                        | Marketing landing page. Hero with demo modal and phone mockup, feature grid (Smart Reminders, Shared Calendar, Private Family Circles), How It Works, CTA, Footer.                                                            |
-| `/join-family` | [https://housemira.com/join-family](https://housemira.com/join-family) — try with demo code: [https://housemira.com/join-family?code=FAMILY-1234](https://housemira.com/join-family?code=FAMILY-1234) | Invite acceptance flow. Reads optional `code`/`inviteCode` and `email` search params, validates input with Zod (`email` + optional `inviteCode`), and submits via a Server Action. Has dedicated `loading.tsx` / `error.tsx`. |
-| `/privacy`     | [https://housemira.com/privacy](https://housemira.com/privacy)                                                                                                                                        | Privacy Policy page. Shared landing `Header`/`Footer` plus `PrivacyContent` (content from `src/features/privacy/lib/content.ts`).                                                                                             |
-| `/terms`       | [https://housemira.com/terms](https://housemira.com/terms)                                                                                                                                            | Terms and Conditions page. Shared landing `Header`/`Footer` plus `TermsContent` (content from `src/features/terms/lib/content.ts`).                                                                                           |
+| Route            | Live URL                                                                                                                                                                                              | Description                                                                                                                                                                                                                                                                          |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `/`              | [https://housemira.com](https://housemira.com)                                                                                                                                                        | Marketing landing page. Hero with demo modal and phone mockup, feature grid (Smart Reminders, Shared Calendar, Private Family Circles), How It Works, CTA, Footer.                                                                                                                   |
+| `/join-family`   | [https://housemira.com/join-family](https://housemira.com/join-family) — try with demo code: [https://housemira.com/join-family?code=FAMILY-1234](https://housemira.com/join-family?code=FAMILY-1234) | Invite acceptance flow. Reads optional `code`/`inviteCode` and `email` search params, validates input with Zod (`email` + optional `inviteCode`), and submits via a Server Action. Has dedicated `loading.tsx` / `error.tsx`.                                                        |
+| `/invite-family` | [https://housemira.com/invite-family](https://housemira.com/invite-family)                                                                                                                            | Invite sending flow. `InviteFamilyForm` collects `to`, `locale`, `inviterName`, `familyName`, `inviteCode` and submits via the `sendInviteAction` Server Action, which POSTs the payload to the Supabase `resend-email-v1` Edge Function. Has dedicated `loading.tsx` / `error.tsx`. |
+| `/privacy`       | [https://housemira.com/privacy](https://housemira.com/privacy)                                                                                                                                        | Privacy Policy page. Shared landing `Header`/`Footer` plus `PrivacyContent` (content from `src/features/privacy/lib/content.ts`).                                                                                                                                                    |
+| `/terms`         | [https://housemira.com/terms](https://housemira.com/terms)                                                                                                                                            | Terms and Conditions page. Shared landing `Header`/`Footer` plus `TermsContent` (content from `src/features/terms/lib/content.ts`).                                                                                                                                                  |
 
 Redirects (see `next.config.ts`): `/notes`, `/notes/:path*`, `/pricing`, `/pricing/:path*` → `/` (permanent). Shared Notes was sunset (PR #14) and the pricing page was removed, so stale bookmarks/crawlers land on home instead of a 404.
 
-Every async route group ships `loading.tsx` + `error.tsx` (root + `join-family`).
+Every async route group ships `loading.tsx` + `error.tsx` (root + `join-family` + `invite-family`).
 
 ## Tech stack
 
@@ -41,8 +42,11 @@ Rendering: Server Components by default; `"use client"` only on interactive leav
 app/                 # routes only: page.tsx, layout.tsx, loading.tsx, error.tsx
 src/components/      # shared UI (PascalCase.tsx, co-located *.test.tsx)
   landing/           # Header, Hero, Features, HowItWorks, CtaSection, Footer, DemoModal, PhoneMockup, Logo, Reveal
+  SiteHeader.tsx     # shared invitation-system header (join + invite pages)
+  SiteFooter.tsx     # shared invitation-system footer (join + invite pages)
 src/features/<name>/ # feature slice: components/, hooks/, lib/, schemas.ts, actions.ts
-  join-family/       # JoinFamilyForm (+ Server Action), schemas, invite-code helpers, Join* layout components
+  join-family/       # JoinFamilyForm (+ Server Action), schemas, invite-code helpers
+  invite-family/     # InviteFamilyForm + sendInviteAction Server Action + resend-email-v1 Edge Function client
   privacy/           # PrivacyContent + lib/content.ts
   terms/             # TermsContent + lib/content.ts
 src/lib/             # env.ts (Zod-validated env), utils.ts (cn(), formatDate)
@@ -65,7 +69,91 @@ Env vars (see `.env.example`, validated in `src/lib/env.ts`):
 ```text
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 NEXT_PUBLIC_PRIVACY_EMAIL=privacy@housemira.com
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=[YOUR_ENV_KEY]
+SUPABASE_INVITE_FUNCTION_NAME=resend-email-v1
+TURNSTILE_SECRET_KEY=[YOUR_TURNSTILE_SECRET]
+UPSTASH_REDIS_REST_URL=https://your-db.upstash.io
+UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
 ```
+
+`SUPABASE_URL` is required with no default: the app fails fast at startup
+with a clear message when it is missing, instead of silently targeting a
+hardcoded project. Empty strings are treated as unset
+(`src/lib/env.ts`). `SUPABASE_ANON_KEY` is optional at startup but required
+to actually send invites — without it the invite Server Action returns the
+generic `Could not send invite. Try again.` error before any network call
+(the missing-key detail is logged server-side with `console.error` only).
+
+## Invite email authorization & abuse protection
+
+Sending email is an abuse vector, so the `/invite-family` flow is layered:
+
+- **Single public action, no client-controlled overrides.**
+  `sendInviteAction` (`src/features/invite-family/actions.ts`) is the only
+  exported Server Action and takes a single `input` argument. Rate-limit key
+  injection and Turnstile stubs live in the non-`"use server"` core
+  (`src/features/invite-family/lib/invite-action-core.ts`), which clients
+  cannot invoke — so attackers cannot pass a rotating `rateLimitKey` to
+  evade IP limiting.
+- **Bot gate (Turnstile) with production fail-closed.** When
+  `TURNSTILE_SECRET_KEY` is set, the action requires a valid Cloudflare
+  Turnstile token (verified server-side in
+  `src/features/invite-family/lib/verify-turnstile.ts`) before sending.
+  When no secret is configured, the action fails closed in production
+  (generic error, server-side `console.error`) and only sends in dev/test.
+  Do not expose the form publicly until Turnstile (or app-level session
+  auth) is enforced.
+- **Authorization boundary = the Supabase `resend-email-v1` Edge Function.**
+  The anon key sent as `Authorization: Bearer` + `apikey` headers is a public
+  client identifier, not a secrecy boundary. The Edge Function itself MUST
+  verify the caller's Supabase JWT (service-role check / allowlisted sender)
+  and enforce its own rate limits; otherwise anyone who learns the endpoint
+  can send email through it. This app has no session/auth yet — once app-level
+  auth lands, `sendInviteAction`
+  (`src/features/invite-family/actions.ts`) must additionally require a valid
+  session and fail closed (generic error) when there is none.
+- **Honeypot:** the form renders a hidden `website` input that humans never
+  fill. Submissions with a filled honeypot get a fake success and never reach
+  the Edge Function.
+- **Rate limiting:** a 5 requests/minute per-sender limiter gates the Server
+  Action. When `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` are set,
+  counts live in shared Redis (`src/features/invite-family/lib/rate-limit-store.ts`)
+  so every instance enforces one budget (required for serverless /
+  multi-instance). When they are unset, the limiter is in-memory
+  (`src/features/invite-family/lib/rate-limit.ts`) and explicitly scoped to
+  a **single-instance low-risk rollout only** — do not run public
+  multi-instance / serverless traffic on the memory limiter. `x-forwarded-for` trust boundary:
+  this header is client-controlled and can be spoofed, so only trust it when
+  the hosting platform / reverse proxy overwrites it (e.g. Vercel, Fly, or an
+  NGINX `proxy_set_header X-Forwarded-For $remote_addr` setup). Do not trust
+  a pass-through value from an untrusted proxy. When no IP can be resolved
+  the action fails closed (generic rate-limit error) instead of sharing a
+  global bucket.
+- **Error hygiene:** Edge Function status/detail is logged server-side with
+  `console.error` (truncated to 500 chars) and never surfaced — clients only
+  receive `Could not send invite. Try again.` (including when
+  `SUPABASE_ANON_KEY` is missing; the missing-key detail is logged
+  server-side only). The form also catches Server Action throws and shows
+  the same generic message instead of hanging.
+- **Localization:** invite UI copy lives in
+  `src/features/invite-family/lib/strings.ts` (`en`/`pt`/`es`, matching the
+  `locale` field). The form and page render from that dictionary — no
+  hardcoded display strings.
+- **Shared chrome:** the invite and join pages share `SiteHeader`/`SiteFooter`
+  from `src/components/` (the old `JoinHeader`/`JoinFooter` are thin
+  re-exports). No cross-feature component imports in routes.
+- **Before enabling publicly:** prove `resend-email-v1` rejects
+  unauthenticated calls (Supabase JWT verification / allowlisted sender plus
+  a server-side rate limit on the Edge Function itself) with the live negative
+  test, and gate `sendInviteAction` behind Turnstile verification first. Do not expose the form publicly on anon-key auth alone.
+  ```bash
+  RUN_LIVE_EDGE_TESTS=1 SUPABASE_URL=https://your-project.supabase.co \
+    SUPABASE_ANON_KEY=<anon-key> SUPABASE_INVITE_FUNCTION_NAME=resend-email-v1 \
+    npx vitest run src/features/invite-family/lib/edge-auth-negative.live.test.ts
+  ```
+  If that spec fails (edge returns 200 for anon-key-only calls or never 429s
+  under burst), keep `/invite-family` internal until the Edge Function is hardened.
 
 ## Commands
 
@@ -88,7 +176,7 @@ After any code change, run in order: `lint` → `typecheck` → `test`. For rout
 ## Testing
 
 - Unit/integration: Vitest (jsdom) + Testing Library + user-event. Co-located `*.test.tsx` next to source, `src/lib/*.test.ts` for utils. Query by role/label (`getByRole`, `getByLabelText`); mock server boundaries (`fetch`, Server Actions), not internals. Required coverage: pure utils, Server Actions (happy path + Zod rejection + auth), critical UI states (loading/empty/error). Coverage thresholds: 80% lines/functions/branches.
-- E2E: specs in `e2e/*.spec.ts` (home, join-family, privacy, terms) run against `npm run build && npm start` in CI. Never hit real third-party APIs — seed local data or mock.
+- E2E: specs in `e2e/*.spec.ts` (home, join-family, invite-family, privacy, terms) run against `npm run build && npm start` in CI. Never hit real third-party APIs — seed local data or mock.
 
 ## Contributing
 
