@@ -3,16 +3,16 @@
 import { useState, type FormEvent } from "react";
 import { cn } from "@/lib/utils";
 import { sendInviteAction, type InviteFamilyActionErrors } from "../actions";
+import { getInviteFamilyStrings, inviteFamilyLocales } from "../lib/strings";
 import { inviteFamilySchema } from "../schemas";
-
-const LOCALE_OPTIONS = [
-  { value: "en", label: "English (en)" },
-  { value: "pt", label: "Português (pt)" },
-  { value: "es", label: "Español (es)" },
-];
 
 type InviteFamilyFormProps = {
   initialInviteCode?: string;
+  /**
+   * Cloudflare Turnstile client token. Wired to the Turnstile widget when
+   * `TURNSTILE_SECRET_KEY` is configured (see README); empty in dev/test.
+   */
+  turnstileToken?: string;
 };
 
 const inputClass =
@@ -25,7 +25,10 @@ function fieldShell(hasError: boolean): string {
   );
 }
 
-export function InviteFamilyForm({ initialInviteCode = "" }: InviteFamilyFormProps) {
+export function InviteFamilyForm({
+  initialInviteCode = "",
+  turnstileToken = "",
+}: InviteFamilyFormProps) {
   const [to, setTo] = useState("");
   const [locale, setLocale] = useState("en");
   const [inviterName, setInviterName] = useState("");
@@ -38,6 +41,8 @@ export function InviteFamilyForm({ initialInviteCode = "" }: InviteFamilyFormPro
   const [formError, setFormError] = useState("");
   const [sentTo, setSentTo] = useState("");
   const [isPending, setIsPending] = useState(false);
+
+  const strings = getInviteFamilyStrings(locale);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -55,7 +60,7 @@ export function InviteFamilyForm({ initialInviteCode = "" }: InviteFamilyFormPro
         if (field && !fieldErrors[field]) fieldErrors[field] = issue.message;
       }
       setErrors(fieldErrors);
-      setFormError(Object.keys(fieldErrors).length === 0 ? "Invalid input." : "");
+      setFormError(Object.keys(fieldErrors).length === 0 ? strings.invalidInputError : "");
       setSentTo("");
       return;
     }
@@ -64,13 +69,16 @@ export function InviteFamilyForm({ initialInviteCode = "" }: InviteFamilyFormPro
     setSentTo("");
     setIsPending(true);
     try {
-      const result = await sendInviteAction({ ...parsed.data, website });
+      const result = await sendInviteAction({ ...parsed.data, website, turnstileToken });
       if (!result.ok) {
         setErrors(result.errors);
         setFormError(result.formError ?? "");
         return;
       }
       setSentTo(parsed.data.to);
+    } catch {
+      setErrors({});
+      setFormError(strings.genericError);
     } finally {
       setIsPending(false);
     }
@@ -78,10 +86,8 @@ export function InviteFamilyForm({ initialInviteCode = "" }: InviteFamilyFormPro
 
   return (
     <div>
-      <h2 className="m-0 text-lg font-extrabold text-[#634f39]">Invite your family</h2>
-      <p className="mb-0 mt-2 text-[10.5px] text-[#b8a080]">
-        Send an email invitation to your family circle
-      </p>
+      <h2 className="m-0 text-lg font-extrabold text-[#634f39]">{strings.heading}</h2>
+      <p className="mb-0 mt-2 text-[10.5px] text-[#b8a080]">{strings.subheading}</p>
       <form onSubmit={handleSubmit} noValidate>
         <div className="hidden" aria-hidden="true">
           <label htmlFor="invite-website">Website</label>
@@ -100,14 +106,14 @@ export function InviteFamilyForm({ initialInviteCode = "" }: InviteFamilyFormPro
             htmlFor="invite-to"
             className="mb-2 ml-[3px] block text-[7.5px] font-bold tracking-[0.14em] text-brand"
           >
-            RECIPIENT EMAIL
+            {strings.recipientEmailLabel}
           </label>
           <div className={fieldShell(Boolean(errors.to))}>
             <input
               id="invite-to"
               name="to"
               type="email"
-              placeholder="email@example.com"
+              placeholder={strings.recipientEmailPlaceholder}
               autoComplete="email"
               required
               value={to}
@@ -130,14 +136,14 @@ export function InviteFamilyForm({ initialInviteCode = "" }: InviteFamilyFormPro
               htmlFor="invite-inviter"
               className="mb-2 ml-[3px] block text-[7.5px] font-bold tracking-[0.14em] text-brand"
             >
-              YOUR NAME
+              {strings.yourNameLabel}
             </label>
             <div className={fieldShell(Boolean(errors.inviterName))}>
               <input
                 id="invite-inviter"
                 name="inviterName"
                 type="text"
-                placeholder="John Doe"
+                placeholder={strings.yourNamePlaceholder}
                 autoComplete="name"
                 required
                 value={inviterName}
@@ -159,14 +165,14 @@ export function InviteFamilyForm({ initialInviteCode = "" }: InviteFamilyFormPro
               htmlFor="invite-family-name"
               className="mb-2 ml-[3px] block text-[7.5px] font-bold tracking-[0.14em] text-brand"
             >
-              FAMILY NAME
+              {strings.familyNameLabel}
             </label>
             <div className={fieldShell(Boolean(errors.familyName))}>
               <input
                 id="invite-family-name"
                 name="familyName"
                 type="text"
-                placeholder="Smith Family"
+                placeholder={strings.familyNamePlaceholder}
                 autoComplete="off"
                 required
                 value={familyName}
@@ -190,14 +196,14 @@ export function InviteFamilyForm({ initialInviteCode = "" }: InviteFamilyFormPro
               htmlFor="invite-code"
               className="mb-2 ml-[3px] block text-[7.5px] font-bold tracking-[0.14em] text-brand"
             >
-              INVITE CODE
+              {strings.inviteCodeLabel}
             </label>
             <div className={fieldShell(Boolean(errors.inviteCode))}>
               <input
                 id="invite-code"
                 name="inviteCode"
                 type="text"
-                placeholder="ABC-123"
+                placeholder={strings.inviteCodePlaceholder}
                 autoComplete="off"
                 spellCheck={false}
                 required
@@ -220,7 +226,7 @@ export function InviteFamilyForm({ initialInviteCode = "" }: InviteFamilyFormPro
               htmlFor="invite-locale"
               className="mb-2 ml-[3px] block text-[7.5px] font-bold tracking-[0.14em] text-brand"
             >
-              LANGUAGE
+              {strings.languageLabel}
             </label>
             <div className={fieldShell(Boolean(errors.locale))}>
               <select
@@ -232,9 +238,9 @@ export function InviteFamilyForm({ initialInviteCode = "" }: InviteFamilyFormPro
                 aria-describedby={errors.locale ? "invite-locale-error" : undefined}
                 className={inputClass}
               >
-                {LOCALE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                {inviteFamilyLocales.map((value) => (
+                  <option key={value} value={value}>
+                    {strings.localeOptionLabels[value]}
                   </option>
                 ))}
               </select>
@@ -252,7 +258,7 @@ export function InviteFamilyForm({ initialInviteCode = "" }: InviteFamilyFormPro
           disabled={isPending}
           className="mt-[18px] inline-flex h-[62px] w-full items-center justify-center gap-3 rounded-2xl bg-brand text-[13.5px] font-bold text-white shadow-[0_10px_20px_rgba(139,115,85,0.3)] transition-colors hover:bg-[#7a6348] disabled:opacity-70"
         >
-          {isPending ? "Sending…" : "Send Invite"}
+          {isPending ? strings.submittingLabel : strings.submitLabel}
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path
               d="M2.5 8h10M9 4.5 12.5 8 9 11.5"
@@ -274,12 +280,12 @@ export function InviteFamilyForm({ initialInviteCode = "" }: InviteFamilyFormPro
           role="status"
           className="mx-auto mt-4 max-w-[300px] text-xs font-semibold text-[#634f39]"
         >
-          Invite sent to {sentTo} — they&rsquo;ll get an email with your invite code.
+          {strings.successMessage(sentTo)}
         </p>
       )}
       <hr className="mb-0 mt-[34px] border-0 border-t border-[#faf9f6]" />
       <p className="mx-auto mb-0 mt-[22px] max-w-[300px] text-[8.2px] leading-[1.7] text-[#c9b99a]">
-        Your invite email is sent securely through our invitation service.
+        {strings.secureNote}
       </p>
     </div>
   );

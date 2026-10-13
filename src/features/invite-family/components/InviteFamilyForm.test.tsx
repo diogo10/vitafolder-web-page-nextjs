@@ -89,6 +89,15 @@ describe("InviteFamilyForm", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/could not send invite/i);
   });
 
+  it("shows a generic error when the action throws", async () => {
+    const user = userEvent.setup();
+    sendInviteActionMock.mockRejectedValue(new Error("boom"));
+    render(<InviteFamilyForm />);
+    await fillValidForm(user);
+    await user.click(screen.getByRole("button", { name: /send invite/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/could not send invite/i);
+  });
+
   it("seeds the invite code once and ignores later prop changes", async () => {
     const user = userEvent.setup();
     const { rerender } = render(<InviteFamilyForm initialInviteCode="AAA-111" />);

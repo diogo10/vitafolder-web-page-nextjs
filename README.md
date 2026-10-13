@@ -42,8 +42,10 @@ Rendering: Server Components by default; `"use client"` only on interactive leav
 app/                 # routes only: page.tsx, layout.tsx, loading.tsx, error.tsx
 src/components/      # shared UI (PascalCase.tsx, co-located *.test.tsx)
   landing/           # Header, Hero, Features, HowItWorks, CtaSection, Footer, DemoModal, PhoneMockup, Logo, Reveal
+  SiteHeader.tsx     # shared invitation-system header (join + invite pages)
+  SiteFooter.tsx     # shared invitation-system footer (join + invite pages)
 src/features/<name>/ # feature slice: components/, hooks/, lib/, schemas.ts, actions.ts
-  join-family/       # JoinFamilyForm (+ Server Action), schemas, invite-code helpers, Join* layout components
+  join-family/       # JoinFamilyForm (+ Server Action), schemas, invite-code helpers
   invite-family/     # InviteFamilyForm + sendInviteAction Server Action + resend-email-v1 Edge Function client
   privacy/           # PrivacyContent + lib/content.ts
   terms/             # TermsContent + lib/content.ts
@@ -70,6 +72,9 @@ NEXT_PUBLIC_PRIVACY_EMAIL=privacy@housemira.com
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=[YOUR_ENV_KEY]
 SUPABASE_INVITE_FUNCTION_NAME=resend-email-v1
+TURNSTILE_SECRET_KEY=[YOUR_TURNSTILE_SECRET]
+UPSTASH_REDIS_REST_URL=https://your-db.upstash.io
+UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
 ```
 
 `SUPABASE_URL` is required with no default: the app fails fast at startup
@@ -84,6 +89,21 @@ generic `Could not send invite. Try again.` error before any network call
 
 Sending email is an abuse vector, so the `/invite-family` flow is layered:
 
+- **Single public action, no client-controlled overrides.**
+  `sendInviteAction` (`src/features/invite-family/actions.ts`) is the only
+  exported Server Action and takes a single `input` argument. Rate-limit key
+  injection and Turnstile stubs live in the non-`"use server"` core
+  (`src/features/invite-family/lib/invite-action-core.ts`), which clients
+  cannot invoke — so attackers cannot pass a rotating `rateLimitKey` to
+  evade IP limiting.
+- **Bot gate (Turnstile) with production fail-closed.** When
+  `TURNSTILE_SECRET_KEY` is set, the action requires a valid Cloudflare
+  Turnstile token (verified server-side in
+  `src/features/invite-family/lib/verify-turnstile.ts`) before sending.
+  When no secret is configured, the action fails closed in production
+  (generic error, server-side `console.error`) and only sends in dev/test.
+  Do not expose the form publicly until Turnstile (or app-level session
+  auth) is enforced.
 - **Authorization boundary = the Supabase `resend-email-v1` Edge Function.**
   The anon key sent as `Authorization: Bearer` + `apikey` headers is a public
   client identifier, not a secrecy boundary. The Edge Function itself MUST
@@ -95,14 +115,15 @@ Sending email is an abuse vector, so the `/invite-family` flow is layered:
   session and fail closed (generic error) when there is none.
 - **Honeypot:** the form renders a hidden `website` input that humans never
   fill. Submissions with a filled honeypot get a fake success and never reach
-  the Edge Function. For stronger bot protection, verify Cloudflare Turnstile
-  / reCAPTCHA in `sendInviteAction` before sending.
-- **Rate limiting:** a sliding-window limiter (5 requests/minute per sender
-  IP, resolved via `x-forwarded-for`) gates the Server Action
-  (`src/features/invite-family/lib/rate-limit.ts`). It is in-memory and
-  explicitly scoped to a single-instance low-risk rollout — do not rely on it
-  for multi-instance / serverless production traffic. Before scaling, replace
-  it with a shared store (Upstash Redis via `@upstash/ratelimit`). `x-forwarded-for` trust boundary:
+  the Edge Function.
+- **Rate limiting:** a 5 requests/minute per-sender limiter gates the Server
+  Action. When `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` are set,
+  counts live in shared Redis (`src/features/invite-family/lib/rate-limit-store.ts`)
+  so every instance enforces one budget (required for serverless /
+  multi-instance). When they are unset, the limiter is in-memory
+  (`src/features/invite-family/lib/rate-limit.ts`) and explicitly scoped to
+  a **single-instance low-risk rollout only** — do not run public
+  multi-instance / serverless traffic on the memory limiter. `x-forwarded-for` trust boundary:
   this header is client-controlled and can be spoofed, so only trust it when
   the hosting platform / reverse proxy overwrites it (e.g. Vercel, Fly, or an
   NGINX `proxy_set_header X-Forwarded-For $remote_addr` setup). Do not trust
@@ -113,12 +134,26 @@ Sending email is an abuse vector, so the `/invite-family` flow is layered:
   `console.error` (truncated to 500 chars) and never surfaced — clients only
   receive `Could not send invite. Try again.` (including when
   `SUPABASE_ANON_KEY` is missing; the missing-key detail is logged
-  server-side only).
+  server-side only). The form also catches Server Action throws and shows
+  the same generic message instead of hanging.
+- **Localization:** invite UI copy lives in
+  `src/features/invite-family/lib/strings.ts` (`en`/`pt`/`es`, matching the
+  `locale` field). The form and page render from that dictionary — no
+  hardcoded display strings.
+- **Shared chrome:** the invite and join pages share `SiteHeader`/`SiteFooter`
+  from `src/components/` (the old `JoinHeader`/`JoinFooter` are thin
+  re-exports). No cross-feature component imports in routes.
 - **Before enabling publicly:** prove `resend-email-v1` rejects
   unauthenticated calls (Supabase JWT verification / allowlisted sender plus
-  a server-side rate limit on the Edge Function itself) with a live negative
-  test, or gate `sendInviteAction` behind a session check / Turnstile
-  verification first. Do not expose the form publicly on anon-key auth alone.
+  a server-side rate limit on the Edge Function itself) with the live negative
+  test, and gate `sendInviteAction` behind Turnstile verification first. Do not expose the form publicly on anon-key auth alone.
+  ```bash
+  RUN_LIVE_EDGE_TESTS=1 SUPABASE_URL=https://your-project.supabase.co \
+    SUPABASE_ANON_KEY=<anon-key> SUPABASE_INVITE_FUNCTION_NAME=resend-email-v1 \
+    npx vitest run src/features/invite-family/lib/edge-auth-negative.live.test.ts
+  ```
+  If that spec fails (edge returns 200 for anon-key-only calls or never 429s
+  under burst), keep `/invite-family` internal until the Edge Function is hardened.
 
 ## Commands
 

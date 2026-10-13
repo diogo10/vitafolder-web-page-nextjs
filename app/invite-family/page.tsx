@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/SiteHeader";
 import { InviteFamilyForm } from "@/features/invite-family/components/InviteFamilyForm";
-import { JoinFooter } from "@/features/join-family/components/JoinFooter";
-import { JoinHeader } from "@/features/join-family/components/JoinHeader";
+import { inviteFamilyStrings } from "@/features/invite-family/lib/strings";
 import { extractInviteCode } from "@/features/join-family/lib/invite";
 
 export const metadata: Metadata = {
@@ -13,23 +14,26 @@ type InviteFamilyPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+const strings = inviteFamilyStrings.en;
+
 export default async function InviteFamilyPage({ searchParams }: InviteFamilyPageProps) {
   const params = (await searchParams) ?? {};
   const initialInviteCode = extractInviteCode(params);
 
   return (
     <div className="min-h-screen bg-[#faf9f6] font-sans text-[#634f39]">
-      <JoinHeader />
+      <SiteHeader />
       <main className="mx-auto w-full max-w-[1080px] pb-12">
         <div className="grid items-start gap-7 px-5 pt-14 lg:grid-cols-[1.02fr_1fr] lg:gap-[26px_28px] lg:pl-[78px] lg:pr-[34px] lg:pt-[102px]">
           <div className="pt-2 lg:pt-10">
-            <p className="text-[10px] font-bold tracking-[0.18em] text-brand">FAMILY INVITES</p>
+            <p className="text-[10px] font-bold tracking-[0.18em] text-brand">
+              {strings.pageEyebrow}
+            </p>
             <h1 className="mt-3 text-3xl font-extrabold leading-tight text-[#634f39] sm:text-4xl">
-              Your family is one invite away
+              {strings.pageTitle}
             </h1>
             <p className="mt-4 max-w-[380px] text-sm leading-relaxed text-[#8a755b]">
-              Enter who you want to invite and we&rsquo;ll email them your family circle code. They
-              can join in seconds from any device.
+              {strings.pageDescription}
             </p>
           </div>
           <section
@@ -42,7 +46,7 @@ export default async function InviteFamilyPage({ searchParams }: InviteFamilyPag
           </section>
         </div>
       </main>
-      <JoinFooter />
+      <SiteFooter />
     </div>
   );
 }
