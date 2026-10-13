@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { sendInviteAction } from "./actions";
+import { sendInviteAction, sendInviteActionInternal } from "./actions";
 import { resetInviteRateLimits } from "./lib/rate-limit";
 import { sendInviteEmail } from "./lib/send-invite-email";
 
@@ -25,7 +25,9 @@ beforeEach(() => {
 describe("sendInviteAction", () => {
   it("sends the invite for a valid payload", async () => {
     sendInviteEmailMock.mockResolvedValue({ ok: true });
-    const result = await sendInviteAction(validInput);
+    const result = await sendInviteActionInternal(validInput, {
+      rateLimitKey: "send-valid",
+    });
     expect(result).toEqual({ ok: true });
     expect(sendInviteEmailMock).toHaveBeenCalledWith({
       ...validInput,
@@ -56,7 +58,9 @@ describe("sendInviteAction", () => {
       status: 500,
       error: "Could not send invite. Try again.",
     });
-    const result = await sendInviteAction(validInput);
+    const result = await sendInviteActionInternal(validInput, {
+      rateLimitKey: "send-service-failure",
+    });
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.errors).toEqual({});
@@ -79,14 +83,40 @@ describe("sendInviteAction", () => {
   it("rate-limits repeated submissions", async () => {
     sendInviteEmailMock.mockResolvedValue({ ok: true });
     for (let i = 0; i < 5; i += 1) {
-      const result = await sendInviteAction(validInput, { rateLimitKey: "rate-limit-test" });
+      const result = await sendInviteActionInternal(validInput, {
+        rateLimitKey: "rate-limit-test",
+      });
       expect(result).toEqual({ ok: true });
     }
-    const limited = await sendInviteAction(validInput, { rateLimitKey: "rate-limit-test" });
+    const limited = await sendInviteActionInternal(validInput, {
+      rateLimitKey: "rate-limit-test",
+    });
     expect(limited.ok).toBe(false);
     if (!limited.ok) {
       expect(limited.formError).toMatch(/too many requests/i);
     }
     expect(sendInviteEmailMock).toHaveBeenCalledTimes(5);
+  });
+
+  it("does not rate-limit invalid requests", async () => {
+    sendInviteEmailMock.mockResolvedValue({ ok: true });
+    for (let i = 0; i < 6; i += 1) {
+      const result = await sendInviteAction({ ...validInput, to: "not-an-email" });
+      expect(result.ok).toBe(false);
+    }
+    const valid = await sendInviteActionInternal(validInput, {
+      rateLimitKey: "invalid-not-counted",
+    });
+    expect(valid).toEqual({ ok: true });
+  });
+
+  it("fails closed when no rate-limit key can be resolved", async () => {
+    sendInviteEmailMock.mockResolvedValue({ ok: true });
+    const result = await sendInviteAction(validInput);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.formError).toMatch(/too many requests/i);
+    }
+    expect(sendInviteEmailMock).not.toHaveBeenCalled();
   });
 });

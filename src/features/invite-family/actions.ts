@@ -1,5 +1,7 @@
 "use server";
 
+import { createHash } from "crypto";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { checkInviteRateLimit } from "./lib/rate-limit";
 import { sendInviteEmail } from "./lib/send-invite-email";
@@ -25,7 +27,7 @@ const sendInviteRequestSchema = inviteFamilySchema.extend({
   website: z.string().max(500).optional().default(""),
 });
 
-export type SendInviteActionOverrides = {
+export type SendInviteActionTestOverrides = {
   /** Key for rate limiting (sender IP in production). Test-only override. */
   rateLimitKey?: string;
 };
@@ -37,9 +39,17 @@ export type SendInviteActionOverrides = {
  * - Honeypot: submissions with a filled `website` field are silently
  *   accepted without sending anything. For stronger bot protection, add
  *   Cloudflare Turnstile / reCAPTCHA verification here before sending.
- * - Rate limiting: sliding-window limiter keyed by sender IP (in-memory;
- *   production multi-instance deployments should use Upstash Redis via
- *   `@upstash/ratelimit` instead — see `lib/rate-limit.ts`).
+ * - Validation first: Zod runs before rate limiting so invalid payloads and
+ *   honeypot hits never consume budget. Only valid, non-honeypot requests
+ *   are rate-limited.
+ * - Rate limiting: sliding-window limiter keyed by sender IP (in-memory,
+ *   single-instance; production multi-instance deployments should use
+ *   Upstash Redis via `@upstash/ratelimit` instead — see
+ *   `lib/rate-limit.ts`). Fail-closed: when no per-request key can be
+ *   resolved (no IP, no cookie), the request is rejected with a generic
+ *   rate-limit error rather than falling back to a shared "global" bucket
+ *   (which would let one abusive client exhaust everyone, or let abuse
+ *   through uncounted).
  * - Authorization boundary: this app has no session/auth yet, so per-sender
  *   authorization MUST be enforced by the Supabase `resend-email-v1` Edge
  *   Function (verify the caller's Supabase JWT / allowlisted sender; never
@@ -47,23 +57,19 @@ export type SendInviteActionOverrides = {
  *   session at the top of this action and fail closed (return a generic
  *   formError) when there is none.
  */
-export async function sendInviteAction(
+export async function sendInviteAction(input: unknown): Promise<InviteFamilyActionResult> {
+  return sendInviteActionInternal(input);
+}
+
+/**
+ * Test-only entry point. Production callers must use `sendInviteAction`
+ * (single-arg); the `rateLimitKey` override exists so unit tests can
+ * exercise the limiter without a request scope.
+ */
+export async function sendInviteActionInternal(
   input: unknown,
-  overrides: SendInviteActionOverrides = {}
+  overrides: SendInviteActionTestOverrides = {}
 ): Promise<InviteFamilyActionResult> {
-  const rawWebsite =
-    typeof input === "object" && input !== null
-      ? (input as { website?: unknown }).website
-      : undefined;
-  if (typeof rawWebsite === "string" && rawWebsite.trim() !== "") {
-    return { ok: true };
-  }
-
-  const rateLimitKey = overrides.rateLimitKey ?? (await resolveRateLimitKey());
-  if (!checkInviteRateLimit(rateLimitKey).ok) {
-    return { ok: false, errors: {}, formError: "Too many requests. Try again later." };
-  }
-
   const parsed = sendInviteRequestSchema.safeParse(input);
   if (!parsed.success) {
     const errors: InviteFamilyActionErrors = {};
@@ -77,6 +83,18 @@ export async function sendInviteAction(
     return { ok: false, errors };
   }
 
+  if (parsed.data.website.trim() !== "") {
+    return { ok: true };
+  }
+
+  const rateLimitKey = overrides.rateLimitKey ?? (await resolveRateLimitKey());
+  if (!rateLimitKey) {
+    return { ok: false, errors: {}, formError: "Too many requests. Try again later." };
+  }
+  if (!checkInviteRateLimit(rateLimitKey).ok) {
+    return { ok: false, errors: {}, formError: "Too many requests. Try again later." };
+  }
+
   const { website: _honeypot, ...payload } = parsed.data;
   void _honeypot;
 
@@ -87,14 +105,25 @@ export async function sendInviteAction(
   return { ok: true };
 }
 
-async function resolveRateLimitKey(): Promise<string> {
+function hashCookie(cookie: string): string {
+  return createHash("sha256").update(cookie).digest("hex").slice(0, 32);
+}
+
+/**
+ * Resolve a per-request rate-limit key. Prefers the client IP, falls back to
+ * a hash of the session/cookie header (never the raw cookie value), and
+ * returns `null` when neither is available so the caller can fail closed.
+ */
+async function resolveRateLimitKey(): Promise<string | null> {
   try {
-    const { headers } = await import("next/headers");
-    const forwardedFor = (await headers()).get("x-forwarded-for");
-    const ip = forwardedFor?.split(",")[0]?.trim();
+    const headerList = await headers();
+    const forwardedFor = headerList.get("x-forwarded-for");
+    const ip = forwardedFor?.split(",")[0]?.trim() ?? headerList.get("x-real-ip")?.trim();
     if (ip) return `ip:${ip}`;
+    const cookie = headerList.get("cookie")?.trim();
+    if (cookie) return `cookie:${hashCookie(cookie)}`;
   } catch {
-    // Outside a request scope (unit tests, build): fall back to a shared key.
+    // Outside a request scope (unit tests, build): no per-request key.
   }
-  return "global";
+  return null;
 }

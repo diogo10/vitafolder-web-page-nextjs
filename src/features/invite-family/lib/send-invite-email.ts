@@ -5,6 +5,8 @@ export type SendInviteEmailInput = InviteFamilyInput;
 
 export type SendInviteEmailResult = { ok: true } | { ok: false; error: string; status?: number };
 
+const INVITE_FETCH_TIMEOUT_MS = 10_000;
+
 export type SendInviteEmailOverrides = {
   fetchFn?: typeof fetch;
   endpoint?: string;
@@ -53,6 +55,7 @@ export async function sendInviteEmail(
         "Content-Type": "application/json",
       },
       body: JSON.stringify(input),
+      signal: AbortSignal.timeout(INVITE_FETCH_TIMEOUT_MS),
     });
   } catch {
     return {
