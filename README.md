@@ -6,16 +6,17 @@ Live site: [https://housemira.com](https://housemira.com)
 
 ## Pages
 
-| Route          | Live URL                                                                                                                                                                                              | Description                                                                                                                                                                                                                   |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/`            | [https://housemira.com](https://housemira.com)                                                                                                                                                        | Marketing landing page. Hero with demo modal and phone mockup, feature grid (Smart Reminders, Shared Calendar, Private Family Circles), How It Works, CTA, Footer.                                                            |
-| `/join-family` | [https://housemira.com/join-family](https://housemira.com/join-family) — try with demo code: [https://housemira.com/join-family?code=FAMILY-1234](https://housemira.com/join-family?code=FAMILY-1234) | Invite acceptance flow. Reads optional `code`/`inviteCode` and `email` search params, validates input with Zod (`email` + optional `inviteCode`), and submits via a Server Action. Has dedicated `loading.tsx` / `error.tsx`. |
-| `/privacy`     | [https://housemira.com/privacy](https://housemira.com/privacy)                                                                                                                                        | Privacy Policy page. Shared landing `Header`/`Footer` plus `PrivacyContent` (content from `src/features/privacy/lib/content.ts`).                                                                                             |
-| `/terms`       | [https://housemira.com/terms](https://housemira.com/terms)                                                                                                                                            | Terms and Conditions page. Shared landing `Header`/`Footer` plus `TermsContent` (content from `src/features/terms/lib/content.ts`).                                                                                           |
+| Route            | Live URL                                                                                                                                                                                              | Description                                                                                                                                                                                                                                                                          |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `/`              | [https://housemira.com](https://housemira.com)                                                                                                                                                        | Marketing landing page. Hero with demo modal and phone mockup, feature grid (Smart Reminders, Shared Calendar, Private Family Circles), How It Works, CTA, Footer.                                                                                                                   |
+| `/join-family`   | [https://housemira.com/join-family](https://housemira.com/join-family) — try with demo code: [https://housemira.com/join-family?code=FAMILY-1234](https://housemira.com/join-family?code=FAMILY-1234) | Invite acceptance flow. Reads optional `code`/`inviteCode` and `email` search params, validates input with Zod (`email` + optional `inviteCode`), and submits via a Server Action. Has dedicated `loading.tsx` / `error.tsx`.                                                        |
+| `/invite-family` | [https://housemira.com/invite-family](https://housemira.com/invite-family)                                                                                                                            | Invite sending flow. `InviteFamilyForm` collects `to`, `locale`, `inviterName`, `familyName`, `inviteCode` and submits via the `sendInviteAction` Server Action, which POSTs the payload to the Supabase `resend-email-v1` Edge Function. Has dedicated `loading.tsx` / `error.tsx`. |
+| `/privacy`       | [https://housemira.com/privacy](https://housemira.com/privacy)                                                                                                                                        | Privacy Policy page. Shared landing `Header`/`Footer` plus `PrivacyContent` (content from `src/features/privacy/lib/content.ts`).                                                                                                                                                    |
+| `/terms`         | [https://housemira.com/terms](https://housemira.com/terms)                                                                                                                                            | Terms and Conditions page. Shared landing `Header`/`Footer` plus `TermsContent` (content from `src/features/terms/lib/content.ts`).                                                                                                                                                  |
 
 Redirects (see `next.config.ts`): `/notes`, `/notes/:path*`, `/pricing`, `/pricing/:path*` → `/` (permanent). Shared Notes was sunset (PR #14) and the pricing page was removed, so stale bookmarks/crawlers land on home instead of a 404.
 
-Every async route group ships `loading.tsx` + `error.tsx` (root + `join-family`).
+Every async route group ships `loading.tsx` + `error.tsx` (root + `join-family` + `invite-family`).
 
 ## Tech stack
 
@@ -43,6 +44,7 @@ src/components/      # shared UI (PascalCase.tsx, co-located *.test.tsx)
   landing/           # Header, Hero, Features, HowItWorks, CtaSection, Footer, DemoModal, PhoneMockup, Logo, Reveal
 src/features/<name>/ # feature slice: components/, hooks/, lib/, schemas.ts, actions.ts
   join-family/       # JoinFamilyForm (+ Server Action), schemas, invite-code helpers, Join* layout components
+  invite-family/     # InviteFamilyForm + sendInviteAction Server Action + resend-email-v1 Edge Function client
   privacy/           # PrivacyContent + lib/content.ts
   terms/             # TermsContent + lib/content.ts
 src/lib/             # env.ts (Zod-validated env), utils.ts (cn(), formatDate)
@@ -65,6 +67,9 @@ Env vars (see `.env.example`, validated in `src/lib/env.ts`):
 ```text
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 NEXT_PUBLIC_PRIVACY_EMAIL=privacy@housemira.com
+SUPABASE_URL=https://jheqalwrnztavzxjsdcj.supabase.co
+SUPABASE_ANON_KEY=[YOUR_ENV_KEY]
+SUPABASE_INVITE_FUNCTION_NAME=resend-email-v1
 ```
 
 ## Commands
@@ -88,7 +93,7 @@ After any code change, run in order: `lint` → `typecheck` → `test`. For rout
 ## Testing
 
 - Unit/integration: Vitest (jsdom) + Testing Library + user-event. Co-located `*.test.tsx` next to source, `src/lib/*.test.ts` for utils. Query by role/label (`getByRole`, `getByLabelText`); mock server boundaries (`fetch`, Server Actions), not internals. Required coverage: pure utils, Server Actions (happy path + Zod rejection + auth), critical UI states (loading/empty/error). Coverage thresholds: 80% lines/functions/branches.
-- E2E: specs in `e2e/*.spec.ts` (home, join-family, privacy, terms) run against `npm run build && npm start` in CI. Never hit real third-party APIs — seed local data or mock.
+- E2E: specs in `e2e/*.spec.ts` (home, join-family, invite-family, privacy, terms) run against `npm run build && npm start` in CI. Never hit real third-party APIs — seed local data or mock.
 
 ## Contributing
 
