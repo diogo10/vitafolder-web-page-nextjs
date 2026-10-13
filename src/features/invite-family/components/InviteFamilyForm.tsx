@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { cn } from "@/lib/utils";
 import { sendInviteAction, type InviteFamilyActionErrors } from "../actions";
 import { inviteFamilySchema } from "../schemas";
@@ -30,10 +30,7 @@ export function InviteFamilyForm({ initialInviteCode = "" }: InviteFamilyFormPro
   const [locale, setLocale] = useState("en");
   const [inviterName, setInviterName] = useState("");
   const [familyName, setFamilyName] = useState("");
-  const [inviteCode, setInviteCode] = useState(initialInviteCode);
-  useEffect(() => {
-    setInviteCode(initialInviteCode);
-  }, [initialInviteCode]);
+  const [inviteCode, setInviteCode] = useState(() => initialInviteCode);
   // Honeypot: hidden from humans; bots that fill it are silently dropped by
   // the Server Action (see `sendInviteAction`).
   const [website, setWebsite] = useState("");

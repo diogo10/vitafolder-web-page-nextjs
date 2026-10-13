@@ -1,13 +1,13 @@
 /**
  * Sliding-window rate limiter for the invite-family Server Action.
  *
- * Single-instance limitation: buckets live in module memory, so counts are
- * per Node.js process. Behind multiple instances / serverless concurrency
- * each instance enforces its own budget, which weakens the limit. Production
- * multi-instance deployments should back this with shared state instead —
- * e.g. Upstash Redis via `@upstash/ratelimit` (`RATELIMIT` sliding window,
- * keyed by sender IP/user id). See README "Invite email authorization &
- * abuse protection".
+ * Scope: single-instance, low-risk rollout only. Buckets live in module
+ * memory, so counts are per Node.js process. Behind multiple instances /
+ * serverless concurrency each instance enforces its own budget, which weakens
+ * the limit. Do not rely on this for multi-instance production traffic —
+ * before scaling, replace it with shared state, e.g. Upstash Redis via
+ * `@upstash/ratelimit` (`RATELIMIT` sliding window, keyed by sender IP/user
+ * id). See README "Invite email authorization & abuse protection".
  *
  * Memory hygiene: buckets are pruned opportunistically — expired timestamps
  * are dropped on every check, empty keys are deleted, a periodic sweep clears
@@ -60,11 +60,7 @@ export function checkInviteRateLimit(
   const cutoff = now - windowMs;
   const hits = (buckets.get(key) ?? []).filter((timestamp) => timestamp > cutoff);
   if (hits.length >= maxRequests) {
-    if (hits.length === 0) {
-      buckets.delete(key);
-    } else {
-      buckets.set(key, hits);
-    }
+    buckets.set(key, hits);
     return { ok: false };
   }
   hits.push(now);

@@ -43,9 +43,9 @@ export type SendInviteActionTestOverrides = {
  *   honeypot hits never consume budget. Only valid, non-honeypot requests
  *   are rate-limited.
  * - Rate limiting: sliding-window limiter keyed by sender IP (in-memory,
- *   single-instance; production multi-instance deployments should use
- *   Upstash Redis via `@upstash/ratelimit` instead — see
- *   `lib/rate-limit.ts`). Fail-closed: when no per-request key can be
+ *   scoped to a single-instance low-risk rollout; before multi-instance /
+ *   serverless production traffic, replace with a shared store such as
+ *   Upstash Redis via `@upstash/ratelimit` — see `lib/rate-limit.ts`). Fail-closed: when no per-request key can be
  *   resolved (no IP, no cookie), the request is rejected with a generic
  *   rate-limit error rather than falling back to a shared "global" bucket
  *   (which would let one abusive client exhaust everyone, or let abuse
@@ -113,14 +113,23 @@ function hashCookie(cookie: string): string {
  * Resolve a per-request rate-limit key. Prefers the client IP, falls back to
  * a hash of the session/cookie header (never the raw cookie value), and
  * returns `null` when neither is available so the caller can fail closed.
+ *
+ * Proxy trust boundary: `x-forwarded-for` / `x-real-ip` are client-controlled
+ * and trivially spoofable. Only trust them when the hosting platform or
+ * reverse proxy overwrites them (e.g. Vercel, Fly, or NGINX with
+ * `proxy_set_header X-Forwarded-For $remote_addr`). Do not trust a
+ * pass-through value from an untrusted proxy. Empty or whitespace-only
+ * headers are treated as missing.
  */
 async function resolveRateLimitKey(): Promise<string | null> {
   try {
     const headerList = await headers();
-    const forwardedFor = headerList.get("x-forwarded-for");
-    const ip = forwardedFor?.split(",")[0]?.trim() ?? headerList.get("x-real-ip")?.trim();
+    const forwardedFor = headerList.get("x-forwarded-for")?.trim() || undefined;
+    const firstForwarded = forwardedFor?.split(",")[0]?.trim() || undefined;
+    const realIp = headerList.get("x-real-ip")?.trim() || undefined;
+    const ip = firstForwarded || realIp;
     if (ip) return `ip:${ip}`;
-    const cookie = headerList.get("cookie")?.trim();
+    const cookie = headerList.get("cookie")?.trim() || undefined;
     if (cookie) return `cookie:${hashCookie(cookie)}`;
   } catch {
     // Outside a request scope (unit tests, build): no per-request key.

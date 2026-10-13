@@ -100,8 +100,9 @@ Sending email is an abuse vector, so the `/invite-family` flow is layered:
 - **Rate limiting:** a sliding-window limiter (5 requests/minute per sender
   IP, resolved via `x-forwarded-for`) gates the Server Action
   (`src/features/invite-family/lib/rate-limit.ts`). It is in-memory and
-  single-instance — production multi-instance deployments should use Upstash
-  Redis via `@upstash/ratelimit` instead. `x-forwarded-for` trust boundary:
+  explicitly scoped to a single-instance low-risk rollout — do not rely on it
+  for multi-instance / serverless production traffic. Before scaling, replace
+  it with a shared store (Upstash Redis via `@upstash/ratelimit`). `x-forwarded-for` trust boundary:
   this header is client-controlled and can be spoofed, so only trust it when
   the hosting platform / reverse proxy overwrites it (e.g. Vercel, Fly, or an
   NGINX `proxy_set_header X-Forwarded-For $remote_addr` setup). Do not trust

@@ -89,12 +89,14 @@ describe("InviteFamilyForm", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/could not send invite/i);
   });
 
-  it("keeps typed email when the invite-code prop changes", async () => {
+  it("seeds the invite code once and ignores later prop changes", async () => {
     const user = userEvent.setup();
     const { rerender } = render(<InviteFamilyForm initialInviteCode="AAA-111" />);
     await user.type(screen.getByLabelText(/recipient email/i), "email@example.com");
+    await user.clear(screen.getByLabelText(/invite code/i));
+    await user.type(screen.getByLabelText(/invite code/i), "TYPED-999");
     rerender(<InviteFamilyForm initialInviteCode="BBB-222" />);
     expect(screen.getByLabelText(/recipient email/i)).toHaveValue("email@example.com");
-    expect(screen.getByLabelText(/invite code/i)).toHaveValue("BBB-222");
+    expect(screen.getByLabelText(/invite code/i)).toHaveValue("TYPED-999");
   });
 });
