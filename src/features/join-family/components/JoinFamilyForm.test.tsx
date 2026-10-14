@@ -46,6 +46,20 @@ describe("JoinFamilyForm", () => {
     expect(screen.getByLabelText(/invite code/i)).toHaveValue("ALIAS-1");
   });
 
+  it("autofills the email from the URL ?email= parameter", () => {
+    searchMock.get = (key: string) => (key === "email" ? "ada@example.com" : null);
+    render(<JoinFamilyForm />);
+    expect(screen.getByLabelText(/email address/i)).toHaveValue("ada@example.com");
+  });
+
+  it("prefills code and email together from URL parameters", () => {
+    searchMock.get = (key: string) =>
+      key === "code" ? "FAMILY-1234" : key === "email" ? "ada@example.com" : null;
+    render(<JoinFamilyForm />);
+    expect(screen.getByLabelText(/invite code/i)).toHaveValue("FAMILY-1234");
+    expect(screen.getByLabelText(/email address/i)).toHaveValue("ada@example.com");
+  });
+
   it("does not overwrite a user-provided code with the URL value", () => {
     searchMock.get = (key: string) => (key === "code" ? "FROM-URL" : null);
     render(<JoinFamilyForm initialCode="TYPED-1" />);

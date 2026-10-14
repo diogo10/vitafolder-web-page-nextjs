@@ -42,4 +42,10 @@ describe("extractEmail", () => {
     expect(extractEmail(new URLSearchParams("email=a%40b.co"))).toBe("a@b.co");
     expect(extractEmail({ email: "  ada@example.com " })).toBe("ada@example.com");
   });
+
+  it("reads code and email together from a combined invite link", () => {
+    const params = new URLSearchParams("code=FAMILY-1234&email=ada%40example.com");
+    expect(extractInviteCode(params)).toBe("FAMILY-1234");
+    expect(extractEmail(params)).toBe("ada@example.com");
+  });
 });
