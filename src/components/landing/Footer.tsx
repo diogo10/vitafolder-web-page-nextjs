@@ -3,7 +3,7 @@ import Link from "next/link";
 const FOOTER_LINKS = [
   { label: "Privacy", href: "/privacy" },
   { label: "Terms", href: "/terms" },
-  { label: "Support", href: "#top" },
+  { label: "Support", href: "/support" },
 ];
 
 export function Footer() {
