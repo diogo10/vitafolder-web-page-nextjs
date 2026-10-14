@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { FaqCategoryGroup } from "../lib/group-faqs";
+import { MarkdownText } from "../lib/markdown";
 
 type FaqAccordionProps = {
   groups: FaqCategoryGroup[];
@@ -68,11 +69,9 @@ export function FaqAccordion({ groups }: FaqAccordionProps) {
                       id={`faq-panel-${faq.slug}`}
                       role="region"
                       aria-labelledby={`faq-button-${faq.slug}`}
-                      className="border-t border-line px-5 py-4"
+                      className="space-y-3 border-t border-line px-5 py-4"
                     >
-                      <p className="whitespace-pre-line text-sm leading-relaxed text-mist">
-                        {faq.answer_markdown}
-                      </p>
+                      <MarkdownText text={faq.answer_markdown} />
                     </div>
                   )}
                 </li>
