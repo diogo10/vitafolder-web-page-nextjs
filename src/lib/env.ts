@@ -44,6 +44,16 @@ const envSchema = z.object({
       )
       .default("resend-email-v1")
   ),
+  SUPABASE_JOIN_FUNCTION_NAME: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .regex(
+        /^[A-Za-z0-9][A-Za-z0-9_-]*$/,
+        "SUPABASE_JOIN_FUNCTION_NAME must be a valid Edge Function name (letters, numbers, dashes, underscores)."
+      )
+      .default("join-family-v1")
+  ),
 });
 
 export const env = envSchema.parse({
@@ -56,11 +66,20 @@ export const env = envSchema.parse({
   UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
   UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
   SUPABASE_INVITE_FUNCTION_NAME: process.env.SUPABASE_INVITE_FUNCTION_NAME,
+  SUPABASE_JOIN_FUNCTION_NAME: process.env.SUPABASE_JOIN_FUNCTION_NAME,
 });
 
 export function getInviteEmailEndpoint(
   baseUrl: string = env.SUPABASE_URL,
   functionName: string = env.SUPABASE_INVITE_FUNCTION_NAME
+): string {
+  const normalizedBaseUrl = baseUrl.replace(/\/+$/, "");
+  return `${normalizedBaseUrl}/functions/v1/${functionName}`;
+}
+
+export function getJoinFamilyEndpoint(
+  baseUrl: string = env.SUPABASE_URL,
+  functionName: string = env.SUPABASE_JOIN_FUNCTION_NAME
 ): string {
   const normalizedBaseUrl = baseUrl.replace(/\/+$/, "");
   return `${normalizedBaseUrl}/functions/v1/${functionName}`;

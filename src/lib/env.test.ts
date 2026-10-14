@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { env, getInviteEmailEndpoint } from "./env";
+import { env, getInviteEmailEndpoint, getJoinFamilyEndpoint } from "./env";
 
 describe("env", () => {
   it("parses with defaults", () => {
@@ -13,6 +13,15 @@ describe("env", () => {
     );
     expect(getInviteEmailEndpoint("https://example.supabase.co", "resend-email-v1")).toBe(
       "https://example.supabase.co/functions/v1/resend-email-v1"
+    );
+  });
+
+  it("builds the join endpoint without a double slash for a trailing-slash base URL", () => {
+    expect(getJoinFamilyEndpoint("https://example.supabase.co/", "join-family-v1")).toBe(
+      "https://example.supabase.co/functions/v1/join-family-v1"
+    );
+    expect(getJoinFamilyEndpoint("https://example.supabase.co", "join-family-v1")).toBe(
+      "https://example.supabase.co/functions/v1/join-family-v1"
     );
   });
 });
