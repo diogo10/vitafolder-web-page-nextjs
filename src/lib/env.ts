@@ -54,6 +54,10 @@ const envSchema = z.object({
       )
       .default("join-family-v1")
   ),
+  // Shared secret for the join-family-v1 trusted-backend mode. Server-only
+  // (never NEXT_PUBLIC_): sent as `x-join-secret`. Optional at startup so
+  // local-fallback flows still boot; the join call fails closed without it.
+  JOIN_FAMILY_SHARED_SECRET: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
 });
 
 export const env = envSchema.parse({
@@ -67,6 +71,7 @@ export const env = envSchema.parse({
   UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
   SUPABASE_INVITE_FUNCTION_NAME: process.env.SUPABASE_INVITE_FUNCTION_NAME,
   SUPABASE_JOIN_FUNCTION_NAME: process.env.SUPABASE_JOIN_FUNCTION_NAME,
+  JOIN_FAMILY_SHARED_SECRET: process.env.JOIN_FAMILY_SHARED_SECRET,
 });
 
 export function getInviteEmailEndpoint(

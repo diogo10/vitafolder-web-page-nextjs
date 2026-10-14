@@ -34,7 +34,9 @@ export async function joinFamilyAction(input: unknown): Promise<JoinFamilyAction
 
   const join = await requestJoinFamily({ email, familyCode: inviteCode });
   if (join.ok) {
-    return { ok: true, familyId: join.familyId };
+    return join.alreadyMember
+      ? { ok: true, familyId: join.familyId, alreadyMember: true }
+      : { ok: true, familyId: join.familyId };
   }
   switch (join.reason) {
     case "invalid-code":
@@ -42,8 +44,21 @@ export async function joinFamilyAction(input: unknown): Promise<JoinFamilyAction
         ok: false,
         errors: { inviteCode: "This invite code doesn't look right. Check it and try again." },
       };
+    case "unknown-user":
+      return {
+        ok: false,
+        errors: { email: "We couldn't find an account with this email address." },
+      };
     case "already-member":
       return { ok: true, alreadyMember: true };
+    case "misconfigured":
+      console.error(
+        "[join-family] join-family-v1 rejected the shared secret — check JOIN_FAMILY_SHARED_SECRET."
+      );
+      return {
+        ok: false,
+        errors: { form: "Could not join the family circle. Try again." },
+      };
     case "unreachable":
       return {
         ok: false,
