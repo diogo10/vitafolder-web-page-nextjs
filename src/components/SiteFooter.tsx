@@ -3,7 +3,7 @@ import Link from "next/link";
 const FOOTER_LINKS = [
   { label: "PRIVACY", href: "/privacy" },
   { label: "TERMS", href: "/terms" },
-  { label: "SUPPORT", href: "#" },
+  { label: "SUPPORT", href: "/support" },
 ];
 
 export function SiteFooter() {

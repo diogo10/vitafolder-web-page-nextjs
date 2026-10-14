@@ -20,6 +20,12 @@ test("join-family prefills the invite code from the URL", async ({ page }) => {
   await expect(page.getByLabel(/invite code/i)).toHaveValue("ALIAS-999");
 });
 
+test("join-family prefills code and email from the URL", async ({ page }) => {
+  await page.goto("/join-family?code=FAMILY-1234&email=ada%40example.com");
+  await expect(page.getByLabel(/invite code/i)).toHaveValue("FAMILY-1234");
+  await expect(page.getByLabel(/email address/i)).toHaveValue("ada@example.com");
+});
+
 test("join-family validates email before joining", async ({ page }) => {
   await page.goto("/join-family");
   await page.getByRole("button", { name: /join family circle/i }).click();
