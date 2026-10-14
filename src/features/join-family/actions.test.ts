@@ -14,7 +14,11 @@ beforeEach(() => {
 
 describe("joinFamilyAction", () => {
   it("calls the edge function and returns the family id on success", async () => {
-    requestJoinFamilyMock.mockResolvedValue({ ok: true, familyId: "family-1" });
+    requestJoinFamilyMock.mockResolvedValue({
+      ok: true,
+      familyId: "family-1",
+      alreadyMember: false,
+    });
     const result = await joinFamilyAction({
       email: "ada@example.com",
       inviteCode: "FAMILY-1234",
@@ -51,6 +55,32 @@ describe("joinFamilyAction", () => {
       inviteCode: "FAMILY-1234",
     });
     expect(result).toEqual({ ok: true, alreadyMember: true });
+  });
+
+  it("maps unknown-user to an email field error", async () => {
+    requestJoinFamilyMock.mockResolvedValue({ ok: false, reason: "unknown-user" });
+    const result = await joinFamilyAction({
+      email: "ghost@example.com",
+      inviteCode: "FAMILY-1234",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors.email).toMatch(/couldn't find an account/i);
+    }
+  });
+
+  it("maps misconfigured to a generic form error", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    requestJoinFamilyMock.mockResolvedValue({ ok: false, reason: "misconfigured" });
+    const result = await joinFamilyAction({
+      email: "ada@example.com",
+      inviteCode: "FAMILY-1234",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors.form).toMatch(/could not join/i);
+    }
+    expect(errorSpy).toHaveBeenCalled();
   });
 
   it("maps service failures to a form error", async () => {

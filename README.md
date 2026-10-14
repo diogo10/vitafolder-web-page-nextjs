@@ -73,6 +73,9 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=[YOUR_ENV_KEY]
 SUPABASE_INVITE_FUNCTION_NAME=resend-email-v1
 SUPABASE_JOIN_FUNCTION_NAME=join-family-v1
+# Shared secret for join-family-v1 trusted-backend mode (server-only,
+# sent as x-join-secret; must match the secret configured on the function).
+JOIN_FAMILY_SHARED_SECRET=[YOUR_JOIN_SECRET]
 TURNSTILE_SECRET_KEY=[YOUR_TURNSTILE_SECRET]
 UPSTASH_REDIS_REST_URL=https://your-db.upstash.io
 UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
