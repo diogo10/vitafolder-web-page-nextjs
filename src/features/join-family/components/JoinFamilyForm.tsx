@@ -18,8 +18,8 @@ export function JoinFamilyForm({ initialEmail = "", initialCode = "" }: JoinFami
   const [inviteCode, setInviteCode] = useState(
     () => initialCode || extractInviteCode(searchParams)
   );
-  const [errors, setErrors] = useState<{ email?: string; inviteCode?: string }>({});
-  const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; inviteCode?: string; form?: string }>({});
+  const [notice, setNotice] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
   // Sync from the URL on client-side navigation without clobbering user input
@@ -57,19 +57,23 @@ export function JoinFamilyForm({ initialEmail = "", initialCode = "" }: JoinFami
           fieldErrors.inviteCode = issue.message;
       }
       setErrors(fieldErrors);
-      setSubmitted(false);
+      setNotice(null);
       return;
     }
     setErrors({});
+    setNotice(null);
     setIsPending(true);
     try {
       const actionResult = await joinFamilyAction({ email, inviteCode });
       if (!actionResult.ok) {
         setErrors(actionResult.errors);
-        setSubmitted(false);
         return;
       }
-      setSubmitted(true);
+      setNotice(
+        actionResult.alreadyMember
+          ? "You're already part of this family circle — check your inbox for what's next."
+          : "You're on the list — check your inbox for the next step."
+      );
     } finally {
       setIsPending(false);
     }
@@ -183,12 +187,17 @@ export function JoinFamilyForm({ initialEmail = "", initialCode = "" }: JoinFami
           </svg>
         </button>
       </form>
-      {submitted && (
+      {errors.form && (
+        <p role="alert" className="mx-auto mt-4 max-w-[300px] text-xs font-semibold text-red-600">
+          {errors.form}
+        </p>
+      )}
+      {notice && (
         <p
           role="status"
           className="mx-auto mt-4 max-w-[300px] text-xs font-semibold text-[#634f39]"
         >
-          You&rsquo;re on the list — check your inbox for the next step.
+          {notice}
         </p>
       )}
       <hr className="mb-0 mt-[34px] border-0 border-t border-[#faf9f6]" />

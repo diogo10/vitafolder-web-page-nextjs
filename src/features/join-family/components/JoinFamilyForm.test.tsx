@@ -2,6 +2,13 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { JoinFamilyForm } from "./JoinFamilyForm";
+import { joinFamilyAction } from "../actions";
+
+vi.mock("../actions", () => ({
+  joinFamilyAction: vi.fn(),
+}));
+
+const joinFamilyActionMock = vi.mocked(joinFamilyAction);
 
 const searchMock = vi.hoisted(() => ({
   get: (key: string): string | null => {
@@ -18,6 +25,8 @@ vi.mock("next/navigation", () => ({
 
 beforeEach(() => {
   searchMock.get = () => null;
+  joinFamilyActionMock.mockReset();
+  joinFamilyActionMock.mockResolvedValue({ ok: true });
 });
 
 describe("JoinFamilyForm", () => {
@@ -89,5 +98,30 @@ describe("JoinFamilyForm", () => {
     await user.type(screen.getByLabelText(/email address/i), "ada@example.com");
     await user.click(screen.getByRole("button", { name: /join family circle/i }));
     expect(await screen.findByRole("status")).toHaveTextContent(/check your inbox/i);
+    expect(joinFamilyActionMock).toHaveBeenCalledWith({
+      email: "ada@example.com",
+      inviteCode: "FAMILY-1234",
+    });
+  });
+
+  it("shows the already-a-member notice when the service reports a duplicate", async () => {
+    joinFamilyActionMock.mockResolvedValue({ ok: true, alreadyMember: true });
+    const user = userEvent.setup();
+    render(<JoinFamilyForm initialCode="FAMILY-1234" />);
+    await user.type(screen.getByLabelText(/email address/i), "ada@example.com");
+    await user.click(screen.getByRole("button", { name: /join family circle/i }));
+    expect(await screen.findByRole("status")).toHaveTextContent(/already part/i);
+  });
+
+  it("shows a form-level error when the join service fails", async () => {
+    joinFamilyActionMock.mockResolvedValue({
+      ok: false,
+      errors: { form: "Could not join the family circle. Try again." },
+    });
+    const user = userEvent.setup();
+    render(<JoinFamilyForm initialCode="FAMILY-1234" />);
+    await user.type(screen.getByLabelText(/email address/i), "ada@example.com");
+    await user.click(screen.getByRole("button", { name: /join family circle/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/could not join/i);
   });
 });
