@@ -10,12 +10,10 @@ test("homepage matches the HouseMira design", async ({ page }) => {
   await expect(page.getByText(/© 2026 housemira/i)).toBeVisible();
 });
 
-test("watch demo opens and closes the dialog", async ({ page }) => {
+test("watch demo call to action is not present", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /watch demo/i }).click();
-  await expect(page.getByRole("dialog", { name: /product demo/i })).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog")).not.toBeVisible();
+  await expect(page.getByRole("button", { name: /watch demo/i })).toHaveCount(0);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
 test("mobile menu toggles navigation", async ({ page }) => {

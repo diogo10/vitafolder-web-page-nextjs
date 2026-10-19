@@ -8,7 +8,7 @@ Live site: [https://housemira.com](https://housemira.com)
 
 | Route            | Live URL                                                                                                                                                                                              | Description                                                                                                                                                                                                                                                                          |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/`              | [https://housemira.com](https://housemira.com)                                                                                                                                                        | Marketing landing page. Hero with demo modal and phone mockup, feature grid (Smart Reminders, Shared Calendar, Private Family Circles), How It Works, CTA, Footer.                                                                                                                   |
+| `/`              | [https://housemira.com](https://housemira.com)                                                                                                                                                        | Marketing landing page. Hero with phone mockup, feature grid (Smart Reminders, Shared Calendar, Private Family Circles), How It Works, CTA, Footer.                                                                                                                                  |
 | `/join-family`   | [https://housemira.com/join-family](https://housemira.com/join-family) — try with demo code: [https://housemira.com/join-family?code=FAMILY-1234](https://housemira.com/join-family?code=FAMILY-1234) | Invite acceptance flow. Reads optional `code`/`inviteCode` and `email` search params, validates input with Zod (`email` + optional `inviteCode`), and submits via a Server Action. Has dedicated `loading.tsx` / `error.tsx`.                                                        |
 | `/invite-family` | [https://housemira.com/invite-family](https://housemira.com/invite-family)                                                                                                                            | Invite sending flow. `InviteFamilyForm` collects `to`, `locale`, `inviterName`, `familyName`, `inviteCode` and submits via the `sendInviteAction` Server Action, which POSTs the payload to the Supabase `resend-email-v1` Edge Function. Has dedicated `loading.tsx` / `error.tsx`. |
 | `/privacy`       | [https://housemira.com/privacy](https://housemira.com/privacy)                                                                                                                                        | Privacy Policy page. Shared landing `Header`/`Footer` plus `PrivacyContent` (content from `src/features/privacy/lib/content.ts`).                                                                                                                                                    |
@@ -34,14 +34,14 @@ Every async route group ships `loading.tsx` + `error.tsx` (root + `join-family` 
 | Lint / format            | ESLint `^9` (`next/core-web-vitals` + `@typescript-eslint`, zero-warnings policy), Prettier `^3.4.2`                                       |
 | Devcontainer             | `.devcontainer/Dockerfile` (Node 22 image, port `3000`)                                                                                    |
 
-Rendering: Server Components by default; `"use client"` only on interactive leaves (e.g. `DemoModal`, `Reveal`, join-family form). Mutations go through Server Actions with Zod validation + `revalidatePath()` where applicable.
+Rendering: Server Components by default; `"use client"` only on interactive leaves (e.g. `Reveal`, join-family form). Mutations go through Server Actions with Zod validation + `revalidatePath()` where applicable.
 
 ## Project structure
 
 ```text
 app/                 # routes only: page.tsx, layout.tsx, loading.tsx, error.tsx
 src/components/      # shared UI (PascalCase.tsx, co-located *.test.tsx)
-  landing/           # Header, Hero, Features, HowItWorks, CtaSection, Footer, DemoModal, PhoneMockup, Logo, Reveal
+  landing/           # Header, Hero, Features, HowItWorks, CtaSection, Footer, PhoneMockup, Logo, Reveal
   SiteHeader.tsx     # shared invitation-system header (join + invite pages)
   SiteFooter.tsx     # shared invitation-system footer (join + invite pages)
 src/features/<name>/ # feature slice: components/, hooks/, lib/, schemas.ts, actions.ts
