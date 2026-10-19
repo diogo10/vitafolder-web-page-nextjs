@@ -53,7 +53,8 @@ jobs:
         env:
           # Placeholder URL + intentionally no SUPABASE_ANON_KEY: the invite
           # Server Action short-circuits with a generic error, so E2E
-          # specs never make live Supabase calls.
+          # specs never make live Supabase calls. playwright.config.ts
+          # pins the same credential-free env for the server it starts.
           SUPABASE_URL: https://example.supabase.co
   call-bob:
     needs: [ci]

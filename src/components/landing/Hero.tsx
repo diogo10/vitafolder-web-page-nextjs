@@ -1,14 +1,8 @@
-"use client";
-
-import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { DemoModal } from "./DemoModal";
 import { Reveal } from "./Reveal";
 
 export function Hero() {
-  const [demoOpen, setDemoOpen] = useState(false);
-
   return (
     <section aria-labelledby="hero-heading" className="relative overflow-hidden">
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0">
@@ -42,33 +36,6 @@ export function Hero() {
             >
               Start for free
             </Link>
-            <button
-              type="button"
-              onClick={() => setDemoOpen(true)}
-              className="inline-flex items-center gap-2 rounded-md px-4 py-3 text-sm text-ink transition-colors hover:bg-brand-soft"
-            >
-              <span className="grid h-7 w-7 place-items-center rounded-full border border-line bg-white text-ink">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path d="M8 5.5v13l11-6.5-11-6.5Z" />
-                </svg>
-              </span>
-              Watch demo
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M5 12h14m-6-6 6 6-6 6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
           </div>
           <p className="mt-5 text-xs text-faint">No credit card required · Private &amp; secure</p>
         </Reveal>
@@ -85,7 +52,6 @@ export function Hero() {
           </div>
         </Reveal>
       </div>
-      <DemoModal open={demoOpen} onClose={() => setDemoOpen(false)} />
     </section>
   );
 }

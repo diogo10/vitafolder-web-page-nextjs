@@ -8,7 +8,7 @@ Live site: [https://housemira.com](https://housemira.com)
 
 | Route            | Live URL                                                                                                                                                                                              | Description                                                                                                                                                                                                                                                                          |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/`              | [https://housemira.com](https://housemira.com)                                                                                                                                                        | Marketing landing page. Hero with demo modal and phone mockup, feature grid (Smart Reminders, Shared Calendar, Private Family Circles), How It Works, CTA, Footer.                                                                                                                   |
+| `/`              | [https://housemira.com](https://housemira.com)                                                                                                                                                        | Marketing landing page. Hero with phone mockup, feature grid (Smart Reminders, Shared Calendar, Private Family Circles), How It Works, CTA, Footer.                                                                                                                                  |
 | `/join-family`   | [https://housemira.com/join-family](https://housemira.com/join-family) — try with demo code: [https://housemira.com/join-family?code=FAMILY-1234](https://housemira.com/join-family?code=FAMILY-1234) | Invite acceptance flow. Reads optional `code`/`inviteCode` and `email` search params, validates input with Zod (`email` + optional `inviteCode`), and submits via a Server Action. Has dedicated `loading.tsx` / `error.tsx`.                                                        |
 | `/invite-family` | [https://housemira.com/invite-family](https://housemira.com/invite-family)                                                                                                                            | Invite sending flow. `InviteFamilyForm` collects `to`, `locale`, `inviterName`, `familyName`, `inviteCode` and submits via the `sendInviteAction` Server Action, which POSTs the payload to the Supabase `resend-email-v1` Edge Function. Has dedicated `loading.tsx` / `error.tsx`. |
 | `/privacy`       | [https://housemira.com/privacy](https://housemira.com/privacy)                                                                                                                                        | Privacy Policy page. Shared landing `Header`/`Footer` plus `PrivacyContent` (content from `src/features/privacy/lib/content.ts`).                                                                                                                                                    |
@@ -34,14 +34,14 @@ Every async route group ships `loading.tsx` + `error.tsx` (root + `join-family` 
 | Lint / format            | ESLint `^9` (`next/core-web-vitals` + `@typescript-eslint`, zero-warnings policy), Prettier `^3.4.2`                                       |
 | Devcontainer             | `.devcontainer/Dockerfile` (Node 22 image, port `3000`)                                                                                    |
 
-Rendering: Server Components by default; `"use client"` only on interactive leaves (e.g. `DemoModal`, `Reveal`, join-family form). Mutations go through Server Actions with Zod validation + `revalidatePath()` where applicable.
+Rendering: Server Components by default; `"use client"` only on interactive leaves (e.g. `Reveal`, join-family form). Mutations go through Server Actions with Zod validation + `revalidatePath()` where applicable.
 
 ## Project structure
 
 ```text
 app/                 # routes only: page.tsx, layout.tsx, loading.tsx, error.tsx
 src/components/      # shared UI (PascalCase.tsx, co-located *.test.tsx)
-  landing/           # Header, Hero, Features, HowItWorks, CtaSection, Footer, DemoModal, PhoneMockup, Logo, Reveal
+  landing/           # Header, Hero, Features, HowItWorks, CtaSection, Footer, PhoneMockup, Logo, Reveal
   SiteHeader.tsx     # shared invitation-system header (join + invite pages)
   SiteFooter.tsx     # shared invitation-system footer (join + invite pages)
 src/features/<name>/ # feature slice: components/, hooks/, lib/, schemas.ts, actions.ts
@@ -51,7 +51,8 @@ src/features/<name>/ # feature slice: components/, hooks/, lib/, schemas.ts, act
   terms/             # TermsContent + lib/content.ts
 src/lib/             # env.ts (Zod-validated env), utils.ts (cn(), formatDate)
 public/              # static assets
-e2e/                 # Playwright specs (home, join-family, privacy, terms)
+e2e/                 # Playwright specs (home, join-family, invite-family, support, privacy, terms)
+  fixtures/          # local PostgREST mock (e2e/fixtures/supabase-mock.mjs)
 ```
 
 Rules (from `AGENTS.md`): keep routes thin, business logic in `src/features/<name>/` or `src/lib/`; one component per file; `@/*` alias maps to `src/*` (never deep `../../../` imports); `strict: true` with `noUnusedLocals`/`noUnusedParameters`, no `any` (use `unknown` + narrowing), prefer `type` over `interface`; validate external input and env with Zod (`src/lib/env.ts`, never `process.env` inline); use `next/link`, `next/image` (always `alt` + size), `next/font`; export `metadata`/`generateMetadata` per route, no manual `<head>`; Tailwind + `cn()` mobile-first, no inline `style` unless dynamic, global CSS only in `app/globals.css`.
@@ -172,7 +173,7 @@ npm run typecheck  # tsc --noEmit — must pass
 npm run test       # vitest run (unit/integration)
 npm run test:watch # vitest (local)
 npm run test:cov   # vitest run --coverage (thresholds: 80% lines/functions/branches)
-npm run e2e        # playwright test (runs against npm run start on :3000)
+npm run e2e        # playwright test (build first; starts its own server on :3100)
 ```
 
 After any code change, run in order: `lint` → `typecheck` → `test`. For route/layout changes also verify `npm run build`. If a script is missing, add it to `package.json` instead of inventing a new command.
@@ -180,7 +181,7 @@ After any code change, run in order: `lint` → `typecheck` → `test`. For rout
 ## Testing
 
 - Unit/integration: Vitest (jsdom) + Testing Library + user-event. Co-located `*.test.tsx` next to source, `src/lib/*.test.ts` for utils. Query by role/label (`getByRole`, `getByLabelText`); mock server boundaries (`fetch`, Server Actions), not internals. Required coverage: pure utils, Server Actions (happy path + Zod rejection + auth), critical UI states (loading/empty/error). Coverage thresholds: 80% lines/functions/branches.
-- E2E: specs in `e2e/*.spec.ts` (home, join-family, invite-family, privacy, terms) run against `npm run build && npm start` in CI. Never hit real third-party APIs — seed local data or mock.
+- E2E: specs in `e2e/*.spec.ts` (home, join-family, invite-family, support, privacy, terms) run against `npm run build && npm start` in CI. Never hit real third-party APIs — seed local data or mock. `playwright.config.ts` starts its own server on `:3100` with a credential-free environment (empty `JOIN_FAMILY_SHARED_SECRET` / `TURNSTILE_SECRET_KEY` / Upstash vars), so the specs can never reach a live Supabase, Turnstile, or Upstash endpoint — not even through a local `.env.local`. `SUPABASE_URL` points at the local PostgREST mock in `e2e/fixtures/supabase-mock.mjs`, which serves the `/support` FAQ fixtures.
 
 ## Contributing
 
