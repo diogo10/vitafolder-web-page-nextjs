@@ -12,7 +12,7 @@
       "agent": "build"
     },
     "analyze": {
-      "template": "Analyze the Flutter codebase for potential issues.",
+      "template": "Analyze the codebase for potential issues.",
       "description": "Analyze code quality",
       "agent": "build"
     },
