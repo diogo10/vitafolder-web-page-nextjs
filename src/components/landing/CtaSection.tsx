@@ -32,8 +32,10 @@ export function CtaSection() {
                 />
               </svg>
             </Link>
-            <Link
-              href="#top"
+            <a
+              href="https://play.google.com/store/apps/details?id=com.housemira.app"
+              target="_blank"
+              rel="noopener noreferrer"
               aria-label="Get it on Google Play"
               className="inline-flex items-center gap-3 rounded-md bg-ink px-6 py-2.5 text-left text-white ring-1 ring-[#1f2937] transition-all hover:-translate-y-0.5 hover:opacity-90"
             >
@@ -54,7 +56,7 @@ export function CtaSection() {
                 </span>
                 <span className="block text-sm font-semibold leading-tight">Google Play</span>
               </span>
-            </Link>
+            </a>
           </div>
         </Reveal>
       </div>
