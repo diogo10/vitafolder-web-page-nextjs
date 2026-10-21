@@ -207,11 +207,16 @@ jobs:
           very large). Inspect the changed files using repo-relative paths
           only; do not read absolute paths outside the repo.
 
-          Check for: correctness and bugs, security issues, performance problems,
-          Flutter/Dart idioms, error handling (Either<Failure, T>, no fake
-          fallbacks), architecture (feature-first layers, one Cubit per concern,
-          sealed states, no Supabase imports in cubits), localization via
-          AppLocalizations (no hardcoded displayed text), and test coverage.
+          Check for: correctness and bugs, security issues, and performance;
+          Next.js App Router conventions (Server Components by default, small
+          client boundaries, async route loading/error states, metadata, and
+          optimized navigation/images); React and strict TypeScript practices
+          (avoid `any`, narrow external data); Zod validation at external input
+          boundaries; safe Server Actions and data fetching with explicit
+          error handling and cache revalidation where needed; accessibility,
+          responsive Tailwind styling, and test coverage. Follow the existing
+          app/features/lib structure and project conventions; do not report
+          stylistic preferences as bugs.
 
           Your output MUST start with exactly one line in the form "GRADE: X"
           where X is one of A, B, C, D:
