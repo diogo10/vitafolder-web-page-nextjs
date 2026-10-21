@@ -41,6 +41,18 @@ describe("CtaSection", () => {
     expect(screen.getByRole("link", { name: /get started for free/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /google play/i })).toBeInTheDocument();
   });
+
+  it("links the Android banner to Google Play in a new tab", () => {
+    render(<CtaSection />);
+    const playStoreLink = screen.getByRole("link", { name: /google play/i });
+    expect(playStoreLink).toHaveAttribute(
+      "href",
+      "https://play.google.com/store/apps/details?id=com.housemira.app"
+    );
+    expect(playStoreLink).toHaveAttribute("target", "_blank");
+    expect(playStoreLink).toHaveAttribute("rel", expect.stringContaining("noopener"));
+    expect(playStoreLink).toHaveAttribute("rel", expect.stringContaining("noreferrer"));
+  });
 });
 
 describe("Footer", () => {
