@@ -4,6 +4,10 @@ Family home management web app (Next.js). HouseMira brings your calendar, remind
 
 Live site: [https://housemira.com](https://housemira.com)
 
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
 ## Pages
 
 | Route            | Live URL                                                                                                                                                                                              | Description                                                                                                                                                                                                                                                                          |
