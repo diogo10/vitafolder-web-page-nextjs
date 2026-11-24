@@ -7,6 +7,13 @@ export const metadata: Metadata = {
   description: "Your family dashboard for calendars, reminders, and shared lists.",
 };
 
+// The dashboard is session-gated, so it must never be prerendered: the auth
+// check reads request cookies. Without this, a build that happens to run
+// without SUPABASE_ANON_KEY makes `createSupabaseServerClient()` return before
+// touching `cookies()`, Next.js classifies the route as static, and every
+// request 500s at runtime with DYNAMIC_SERVER_USAGE.
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;

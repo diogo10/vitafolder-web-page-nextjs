@@ -16,7 +16,9 @@ test("login page links to signup below the invite link", async ({ page }) => {
 
   const inviteBox = await invite.boundingBox();
   const signupBox = await signup.boundingBox();
-  expect(inviteBox && signupBox && signupBox.y >= inviteBox.y).toBe(true);
+  expect(inviteBox).not.toBeNull();
+  expect(signupBox).not.toBeNull();
+  expect(signupBox!.y).toBeGreaterThanOrEqual(inviteBox!.y);
 
   await signup.click();
   await expect(page).toHaveURL(/\/signup$/);
@@ -41,9 +43,22 @@ test("signup opens the dashboard and logout returns to login", async ({ page }) 
   await expect(page.getByRole("heading", { name: /^dashboard$/i })).toBeVisible();
   await expect(page.getByRole("navigation", { name: /dashboard/i })).toBeVisible();
   await expect(page.getByRole("link", { name: "Dashboard", exact: true })).toBeVisible();
+  // The dashboard greets the signed-in user, which proves the session cookies
+  // from signup reached the server and the mocked `GET /user` was authorized.
+  await expect(page.getByText(new RegExp(`welcome, ${SIGNUP_EMAIL}`, "i"))).toBeVisible();
 
   await page.getByRole("button", { name: /logout/i }).click();
 
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole("heading", { name: /welcome back/i })).toBeVisible();
+
+  // Logout cleared the session, so the dashboard is no longer accessible.
+  await page.goto("/dashboard");
+  await expect(page).toHaveURL(/\/login$/);
+});
+
+test("dashboard redirects unauthenticated visitors to login", async ({ page }) => {
+  await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByRole("heading", { name: /welcome back/i })).toBeVisible();
 });

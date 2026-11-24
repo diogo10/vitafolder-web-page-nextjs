@@ -101,7 +101,7 @@ function encodeJwt(payload) {
   return Buffer.from(JSON.stringify(payload)).toString("base64url");
 }
 
-function buildAccessToken() {
+function buildAccessToken({ id, email }) {
   const now = Math.floor(Date.now() / 1000);
   const header = encodeJwt({ alg: "HS256", typ: "JWT" });
   const payload = encodeJwt({
@@ -109,10 +109,30 @@ function buildAccessToken() {
     exp: now + 3600,
     iat: now,
     role: "authenticated",
-    sub: E2E_USER.id,
-    email: E2E_USER.email,
+    sub: id,
+    email,
   });
   return `${header}.${payload}.e2e-signature`;
+}
+
+/**
+ * Resolve the user from a bearer token, mirroring GoTrue's `GET /user`.
+ * The token is a test-only JWT whose payload is readable base64url JSON; a
+ * missing or malformed token is unauthorized, exactly like the real API.
+ */
+function userFromAuthorization(request) {
+  const header = request.headers.authorization ?? "";
+  const token = header.startsWith("Bearer ") ? header.slice("Bearer ".length) : "";
+  const payload = token.split(".")[1];
+  if (!payload) return null;
+
+  try {
+    const claims = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    if (typeof claims.sub !== "string" || typeof claims.email !== "string") return null;
+    return buildUser({ id: claims.sub, email: claims.email });
+  } catch {
+    return null;
+  }
 }
 
 async function readJsonBody(request) {
@@ -129,7 +149,7 @@ async function readJsonBody(request) {
 function signInResponse() {
   const now = new Date().toISOString();
   return {
-    access_token: buildAccessToken(),
+    access_token: buildAccessToken(E2E_USER),
     token_type: "bearer",
     expires_in: 3600,
     expires_at: Math.floor(Date.now() / 1000) + 3600,
@@ -154,16 +174,17 @@ function signInResponse() {
 }
 
 function signupResponse(email) {
+  const user = buildUser({
+    id: E2E_SIGNUP_USER.id,
+    email: email || E2E_SIGNUP_USER.email,
+  });
   return {
-    access_token: buildAccessToken(),
+    access_token: buildAccessToken(user),
     token_type: "bearer",
     expires_in: 3600,
     expires_at: Math.floor(Date.now() / 1000) + 3600,
     refresh_token: "e2e-signup-refresh-token",
-    user: buildUser({
-      id: E2E_SIGNUP_USER.id,
-      email: email || E2E_SIGNUP_USER.email,
-    }),
+    user,
   };
 }
 
@@ -201,7 +222,17 @@ const server = createServer(async (request, response) => {
   }
 
   if (url.pathname === "/auth/v1/user" && request.method === "GET") {
-    sendJson(response, 200, { user: buildUser(E2E_SIGNUP_USER) });
+    const user = userFromAuthorization(request);
+    if (!user) {
+      sendJson(response, 401, {
+        code: "bad_jwt",
+        error_code: "bad_jwt",
+        message: "invalid claim: missing sub claim",
+        msg: "invalid claim: missing sub claim",
+      });
+      return;
+    }
+    sendJson(response, 200, user);
     return;
   }
 
