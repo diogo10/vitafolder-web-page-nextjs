@@ -4,13 +4,13 @@ on:
   workflow_call:
     inputs:
       pr:
-        description: 'PR number to review (defaults to the triggering PR)'
+        description: "PR number to review (defaults to the triggering PR)"
         required: false
         type: string
   workflow_dispatch:
     inputs:
       pr:
-        description: 'PR number to review (required for manual runs)'
+        description: "PR number to review (required for manual runs)"
         required: false
         type: string
 
@@ -114,10 +114,10 @@ jobs:
           git fetch origin "$BASE" --depth=50 || true
 
           # The review always runs on one fixed model: the free
-          # opencode/minimax-m3.1-flash-free, the same one the repository
+          # opencode/deepseek-v4.1-flash-free, the same one the repository
           # configures in opencode.jsonc for local development. It needs no
           # API key, so the workflow takes no provider credentials at all.
-          MODEL="opencode/minimax-m3.1-flash-free"
+          MODEL="opencode/deepseek-v4.1-flash-free"
           echo "Using the fixed review model: $MODEL"
 
           # The review agent runs untrusted PR content, so it is sandboxed:
