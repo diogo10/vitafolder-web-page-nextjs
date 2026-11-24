@@ -12,10 +12,21 @@ type SignupErrors = {
   form?: string;
 };
 
-export function SignupForm() {
+type SignupFormProps = {
+  /**
+   * Cloudflare Turnstile client token. Verified server-side whenever
+   * `TURNSTILE_SECRET_KEY` is configured (see README); empty in dev/test.
+   */
+  turnstileToken?: string;
+};
+
+export function SignupForm({ turnstileToken = "" }: SignupFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // Honeypot: hidden from humans; bots that fill it are silently dropped by
+  // the Server Action (see `signupAction`).
+  const [website, setWebsite] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<SignupErrors>({});
   const [notice, setNotice] = useState<string | null>(null);
@@ -41,7 +52,7 @@ export function SignupForm() {
     setNotice(null);
     setIsPending(true);
     try {
-      const result = await signupAction(parsed.data);
+      const result = await signupAction({ ...parsed.data, website, turnstileToken });
       if (!result.ok) {
         setErrors(result.errors);
         return;
@@ -65,6 +76,18 @@ export function SignupForm() {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="mt-8 text-left">
+      <div className="hidden" aria-hidden="true">
+        <label htmlFor="signup-website">Website</label>
+        <input
+          id="signup-website"
+          name="website"
+          type="text"
+          autoComplete="off"
+          tabIndex={-1}
+          value={website}
+          onChange={(event) => setWebsite(event.target.value)}
+        />
+      </div>
       <div>
         <label
           htmlFor="signup-email"
@@ -94,6 +117,7 @@ export function SignupForm() {
             type="email"
             placeholder="name@example.com"
             autoComplete="email"
+            maxLength={254}
             required
             value={email}
             onChange={(event) => setEmail(event.target.value)}
@@ -137,6 +161,7 @@ export function SignupForm() {
             type={showPassword ? "text" : "password"}
             placeholder="At least 8 characters"
             autoComplete="new-password"
+            maxLength={72}
             required
             value={password}
             onChange={(event) => setPassword(event.target.value)}

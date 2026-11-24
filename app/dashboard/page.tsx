@@ -16,10 +16,17 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
-  const user = supabase ? (await supabase.auth.getUser()).data.user : null;
+  const auth = supabase ? await supabase.auth.getUser() : null;
+
+  if (auth?.error) {
+    console.error(`[dashboard] failed to load the signed-in user: ${auth.error.message}`);
+  }
+
+  const user = auth?.data.user ?? null;
 
   if (!user) {
-    redirect("/login");
+    // Preserve the intended destination so login can return the visitor here.
+    redirect("/login?next=%2Fdashboard");
   }
 
   return (

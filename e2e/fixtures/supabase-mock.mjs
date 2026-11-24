@@ -1,14 +1,18 @@
 /**
- * Local PostgREST stand-in for the E2E suite.
+ * Local Supabase stand-in for the E2E suite.
  *
- * `/support` is a dynamic server component that reads the published FAQs from
- * Supabase over PostgREST. E2E must never call a live third-party API, so
- * this mock serves the same payload shape from a local port; the app reaches
- * it through `SUPABASE_URL` (see `playwright.config.ts`).
+ * The app reaches this mock through `SUPABASE_URL` (see
+ * `playwright.config.ts`). E2E must never call a live third-party API, so the
+ * mock serves both the PostgREST reads used by `/support` and the Supabase
+ * Auth routes used by `/login`, `/signup`, and `/dashboard`.
  *
  * Only the routes the app actually uses are implemented:
- *   GET /rest/v1/faqs?locale=eq.<locale>&select=...&order=...
- * Anything else answers 404, like PostgREST would for an unknown table.
+ *   GET  /rest/v1/faqs?locale=eq.<locale>&select=...&order=...
+ *   POST /auth/v1/token    password grant for `/login`
+ *   POST /auth/v1/signup   creates an account/session for `/signup`
+ *   GET  /auth/v1/user     resolves the bearer token for `/dashboard`
+ *   POST /auth/v1/logout   clears the session
+ * Anything else answers 404, like Supabase would for an unknown route.
  */
 
 import { Buffer } from "node:buffer";
@@ -251,5 +255,5 @@ const server = createServer(async (request, response) => {
 });
 
 server.listen(PORT, "127.0.0.1", () => {
-  console.log(`[faq-mock] listening on http://127.0.0.1:${PORT}`);
+  console.log(`[supabase-mock] listening on http://127.0.0.1:${PORT}`);
 });

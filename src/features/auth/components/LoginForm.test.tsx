@@ -51,7 +51,7 @@ describe("LoginForm", () => {
     expect(loginActionMock).not.toHaveBeenCalled();
   });
 
-  it("submits trimmed credentials and navigates home on success", async () => {
+  it("submits trimmed credentials and opens the dashboard on success", async () => {
     const user = userEvent.setup();
     render(<LoginForm />);
 
@@ -64,8 +64,30 @@ describe("LoginForm", () => {
       email: "ada@example.com",
       password: "secret",
     });
-    await waitFor(() => expect(routerMock.replace).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(routerMock.replace).toHaveBeenCalledWith("/dashboard"));
     expect(routerMock.refresh).toHaveBeenCalled();
+  });
+
+  it("opens the preserved destination after signing in", async () => {
+    const user = userEvent.setup();
+    render(<LoginForm nextPath="/dashboard?tab=calendar" />);
+
+    await user.type(screen.getByLabelText(/email address/i), "ada@example.com");
+    await user.type(screen.getByLabelText(/^password$/i), "secret");
+    await user.click(screen.getByRole("button", { name: /^sign in$/i }));
+
+    await waitFor(() => expect(routerMock.replace).toHaveBeenCalledWith("/dashboard?tab=calendar"));
+  });
+
+  it("ignores external destinations and falls back to the dashboard", async () => {
+    const user = userEvent.setup();
+    render(<LoginForm nextPath="//evil.example/dashboard" />);
+
+    await user.type(screen.getByLabelText(/email address/i), "ada@example.com");
+    await user.type(screen.getByLabelText(/^password$/i), "secret");
+    await user.click(screen.getByRole("button", { name: /^sign in$/i }));
+
+    await waitFor(() => expect(routerMock.replace).toHaveBeenCalledWith("/dashboard"));
   });
 
   it("shows a form-level error returned by the action", async () => {
@@ -117,7 +139,7 @@ describe("LoginForm", () => {
     await act(async () => {
       resolveAction({ ok: true });
     });
-    await waitFor(() => expect(routerMock.replace).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(routerMock.replace).toHaveBeenCalledWith("/dashboard"));
   });
 
   it("toggles password visibility", async () => {

@@ -42,12 +42,13 @@ test("login rejects invalid credentials with a safe message", async ({ page }) =
   await expect(page).toHaveURL(/\/login$/);
 });
 
-test("login signs in with valid credentials and returns home", async ({ page }) => {
+test("login signs in with valid credentials and opens the dashboard", async ({ page }) => {
   await page.goto("/login");
   await page.getByLabel(/email address/i).fill(VALID_EMAIL);
   await page.getByLabel(/^password$/i).fill(VALID_PASSWORD);
   await page.getByRole("button", { name: /^sign in$/i }).click();
 
-  await expect(page).toHaveURL("/");
-  await expect(page.getByRole("heading", { name: /run your home like a pro/i })).toBeVisible();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole("heading", { name: /^dashboard$/i })).toBeVisible();
+  await expect(page.getByText(new RegExp(`welcome, ${VALID_EMAIL}`, "i"))).toBeVisible();
 });

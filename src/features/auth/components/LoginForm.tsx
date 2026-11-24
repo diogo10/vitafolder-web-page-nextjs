@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { loginAction } from "../actions";
+import { sanitizeNextPath } from "../lib/redirect";
 import { loginSchema } from "../schemas";
 
 type LoginErrors = {
@@ -12,8 +13,14 @@ type LoginErrors = {
   form?: string;
 };
 
-export function LoginForm() {
+type LoginFormProps = {
+  /** Same-origin destination to open after a successful sign-in. */
+  nextPath?: string;
+};
+
+export function LoginForm({ nextPath }: LoginFormProps) {
   const router = useRouter();
+  const destination = sanitizeNextPath(nextPath);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -43,7 +50,7 @@ export function LoginForm() {
         setErrors(result.errors);
         return;
       }
-      router.replace("/");
+      router.replace(destination);
       router.refresh();
     } catch {
       setErrors({ form: "We couldn't sign you in. Please try again." });

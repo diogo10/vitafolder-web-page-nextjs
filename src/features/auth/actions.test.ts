@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { resetInviteRateLimits } from "@/features/invite-family/lib/rate-limit";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { loginAction, logoutAction, signupAction } from "./actions";
 
@@ -29,6 +30,7 @@ beforeEach(() => {
   signOut.mockReset();
   revalidatePathMock.mockReset();
   redirectMock.mockReset();
+  resetInviteRateLimits();
 });
 
 describe("loginAction", () => {

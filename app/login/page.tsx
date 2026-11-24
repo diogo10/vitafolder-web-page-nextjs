@@ -3,13 +3,22 @@ import Link from "next/link";
 import { Footer } from "@/components/landing/Footer";
 import { Logo } from "@/components/landing/Logo";
 import { LoginForm } from "@/features/auth/components/LoginForm";
+import { sanitizeNextPath } from "@/features/auth/lib/redirect";
 
 export const metadata: Metadata = {
   title: "HouseMira — Sign in",
   description: "Sign in to your HouseMira account to keep your family in sync.",
 };
 
-export default function LoginPage() {
+type LoginPageProps = {
+  searchParams: Promise<{ next?: string | string[] }>;
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
+  const rawNext = Array.isArray(params.next) ? params.next[0] : params.next;
+  const nextPath = sanitizeNextPath(rawNext);
+
   return (
     <div className="flex min-h-screen flex-col bg-cream font-sans text-ink">
       <header className="border-b border-line bg-cream">
@@ -42,7 +51,7 @@ export default function LoginPage() {
               Sign in to pick up where your family left off.
             </p>
 
-            <LoginForm />
+            <LoginForm nextPath={nextPath} />
           </div>
 
           <p className="mt-6 text-center text-[13px] text-mist">

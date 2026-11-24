@@ -63,6 +63,8 @@ describe("SignupForm", () => {
     expect(signupActionMock).toHaveBeenCalledWith({
       email: "ada@example.com",
       password: "password123",
+      website: "",
+      turnstileToken: "",
     });
     await waitFor(() => expect(routerMock.replace).toHaveBeenCalledWith("/dashboard"));
     expect(routerMock.refresh).toHaveBeenCalled();

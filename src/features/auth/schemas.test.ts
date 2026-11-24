@@ -85,4 +85,25 @@ describe("signupSchema", () => {
       expect(result.error.issues[0]?.message).toMatch(/at least 8 characters/i);
     }
   });
+
+  it("caps the email length at 254 characters", () => {
+    const email = `${"a".repeat(243)}@example.com`;
+    expect(email).toHaveLength(255);
+    const result = signupSchema.safeParse({ email, password: "password123" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toMatch(/254 characters or fewer/i);
+    }
+  });
+
+  it("caps the password length at 72 characters", () => {
+    const result = signupSchema.safeParse({
+      email: "ada@example.com",
+      password: "a".repeat(73),
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toMatch(/72 characters or fewer/i);
+    }
+  });
 });

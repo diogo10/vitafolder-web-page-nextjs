@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { env } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getLoginErrorMessage, getSignupErrorMessage } from "./lib/auth-errors";
-import { loginSchema, signupSchema } from "./schemas";
+import { executeSignupAction, type SignupActionResult } from "./lib/signup-action-core";
+import { getLoginErrorMessage } from "./lib/auth-errors";
+import { loginSchema } from "./schemas";
+
+export type { SignupActionErrors, SignupActionResult } from "./lib/signup-action-core";
 
 export type LoginActionErrors = {
   email?: string;
@@ -14,19 +16,6 @@ export type LoginActionErrors = {
 };
 
 export type LoginActionResult = { ok: true } | { ok: false; errors: LoginActionErrors };
-
-export type SignupActionErrors = {
-  email?: string;
-  password?: string;
-  form?: string;
-};
-
-export type SignupActionResult =
-  { ok: true; requiresEmailConfirmation: boolean } | { ok: false; errors: SignupActionErrors };
-
-function getDashboardRedirectUrl(): string {
-  return `${env.NEXT_PUBLIC_SITE_URL.replace(/\/+$/, "")}/dashboard`;
-}
 
 export async function loginAction(input: unknown): Promise<LoginActionResult> {
   const result = loginSchema.safeParse(input);
@@ -60,43 +49,15 @@ export async function loginAction(input: unknown): Promise<LoginActionResult> {
   return { ok: true };
 }
 
+/**
+ * Public signup Server Action (single-arg).
+ *
+ * Rate-limit key injection and Turnstile stubs live in the non-`"use server"`
+ * core (`lib/signup-action-core.ts`) so clients cannot pass overrides and
+ * evade the abuse controls.
+ */
 export async function signupAction(input: unknown): Promise<SignupActionResult> {
-  const result = signupSchema.safeParse(input);
-  if (!result.success) {
-    const errors: SignupActionErrors = {};
-    for (const issue of result.error.issues) {
-      const field = issue.path[0];
-      if (field === "email" && !errors.email) errors.email = issue.message;
-      if (field === "password" && !errors.password) errors.password = issue.message;
-    }
-    return { ok: false, errors };
-  }
-
-  const supabase = await createSupabaseServerClient();
-  if (!supabase) {
-    console.error("[auth] missing SUPABASE_ANON_KEY — signup is not configured.");
-    return {
-      ok: false,
-      errors: { form: "Account creation is temporarily unavailable. Try again." },
-    };
-  }
-
-  const { email, password } = result.data;
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { emailRedirectTo: getDashboardRedirectUrl() },
-  });
-
-  if (error) {
-    return { ok: false, errors: { form: getSignupErrorMessage(error) } };
-  }
-
-  // Supabase returns no session when email confirmation is enabled. The
-  // account still exists, but the user must confirm before they can sign in.
-  revalidatePath("/", "layout");
-
-  return { ok: true, requiresEmailConfirmation: !data.session };
+  return executeSignupAction(input);
 }
 
 export async function logoutAction(): Promise<void> {

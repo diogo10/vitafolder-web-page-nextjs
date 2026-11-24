@@ -8,8 +8,8 @@ import { defineConfig, devices } from "@playwright/test";
 // `src/lib/env.ts` treats empty strings as "unset", which makes the
 // invite/join actions fail closed with a generic error rather than calling
 // Supabase, Turnstile, or Upstash. `SUPABASE_URL` points at the local mock in
-// `e2e/fixtures/supabase-mock.mjs`, so even the FAQ read stays on this
-// machine.
+// `e2e/fixtures/supabase-mock.mjs`, so the FAQ read, password grant, signup,
+// session lookup, and logout all stay on this machine.
 const E2E_PORT = 3100;
 const E2E_MOCK_PORT = 3101;
 
