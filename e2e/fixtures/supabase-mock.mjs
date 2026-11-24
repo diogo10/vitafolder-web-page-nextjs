@@ -72,6 +72,31 @@ const E2E_USER = {
   password: "e2e-valid-password",
 };
 
+const E2E_SIGNUP_USER = {
+  id: "55555555-5555-4555-8555-555555555555",
+  email: "new-user@example.com",
+};
+
+function buildUser({ id, email }) {
+  const now = new Date().toISOString();
+  return {
+    id,
+    aud: "authenticated",
+    role: "authenticated",
+    email,
+    email_confirmed_at: now,
+    phone: "",
+    confirmed_at: now,
+    last_sign_in_at: now,
+    app_metadata: { provider: "email", providers: ["email"] },
+    user_metadata: {},
+    identities: [],
+    created_at: now,
+    updated_at: now,
+    is_anonymous: false,
+  };
+}
+
 function encodeJwt(payload) {
   return Buffer.from(JSON.stringify(payload)).toString("base64url");
 }
@@ -128,6 +153,20 @@ function signInResponse() {
   };
 }
 
+function signupResponse(email) {
+  return {
+    access_token: buildAccessToken(),
+    token_type: "bearer",
+    expires_in: 3600,
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+    refresh_token: "e2e-signup-refresh-token",
+    user: buildUser({
+      id: E2E_SIGNUP_USER.id,
+      email: email || E2E_SIGNUP_USER.email,
+    }),
+  };
+}
+
 function sendJson(response, status, payload) {
   const body = JSON.stringify(payload);
   response.writeHead(status, {
@@ -152,6 +191,23 @@ const server = createServer(async (request, response) => {
       message: "Invalid login credentials",
       msg: "Invalid login credentials",
     });
+    return;
+  }
+
+  if (url.pathname === "/auth/v1/signup" && request.method === "POST") {
+    const payload = await readJsonBody(request);
+    sendJson(response, 200, signupResponse(payload.email));
+    return;
+  }
+
+  if (url.pathname === "/auth/v1/user" && request.method === "GET") {
+    sendJson(response, 200, { user: buildUser(E2E_SIGNUP_USER) });
+    return;
+  }
+
+  if (url.pathname === "/auth/v1/logout" && request.method === "POST") {
+    response.writeHead(204);
+    response.end();
     return;
   }
 

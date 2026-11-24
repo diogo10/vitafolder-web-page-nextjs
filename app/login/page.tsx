@@ -51,6 +51,13 @@ export default function LoginPage() {
               Join with an invite
             </Link>
           </p>
+
+          <p className="mt-3 text-center text-[13px] text-mist">
+            Don&rsquo;t have an invite?{" "}
+            <Link href="/signup" className="font-semibold text-brand hover:text-brand-deep">
+              Sign up
+            </Link>
+          </p>
         </section>
       </main>
 

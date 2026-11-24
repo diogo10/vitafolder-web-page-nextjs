@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loginSchema } from "./schemas";
+import { loginSchema, signupSchema } from "./schemas";
 
 describe("loginSchema", () => {
   it("accepts a valid email and password", () => {
@@ -43,6 +43,46 @@ describe("loginSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues[0]?.message).toMatch(/enter your password/i);
+    }
+  });
+});
+
+describe("signupSchema", () => {
+  it("accepts a valid email and password", () => {
+    const result = signupSchema.safeParse({
+      email: "ada@example.com",
+      password: "correct horse battery staple",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({
+        email: "ada@example.com",
+        password: "correct horse battery staple",
+      });
+    }
+  });
+
+  it("trims the email but leaves the password untouched", () => {
+    const result = signupSchema.parse({ email: "  ada@example.com  ", password: " pass1234 " });
+    expect(result.email).toBe("ada@example.com");
+    expect(result.password).toBe(" pass1234 ");
+  });
+
+  it("rejects a missing or invalid email", () => {
+    for (const email of ["", "not-an-email"]) {
+      const result = signupSchema.safeParse({ email, password: "password123" });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0]?.message).toMatch(/email/i);
+      }
+    }
+  });
+
+  it("rejects a password shorter than 8 characters", () => {
+    const result = signupSchema.safeParse({ email: "ada@example.com", password: "short" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toMatch(/at least 8 characters/i);
     }
   });
 });
