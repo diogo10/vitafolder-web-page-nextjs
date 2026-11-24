@@ -10,17 +10,18 @@ This project is licensed under the [MIT License](LICENSE).
 
 ## Pages
 
-| Route            | Live URL                                                                                                                                                                                              | Description                                                                                                                                                                                                                                                                          |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/`              | [https://housemira.com](https://housemira.com)                                                                                                                                                        | Marketing landing page. Hero with phone mockup, feature grid (Smart Reminders, Shared Calendar, Private Family Circles), How It Works, CTA, Footer.                                                                                                                                  |
-| `/join-family`   | [https://housemira.com/join-family](https://housemira.com/join-family) — try with demo code: [https://housemira.com/join-family?code=FAMILY-1234](https://housemira.com/join-family?code=FAMILY-1234) | Invite acceptance flow. Reads optional `code`/`inviteCode` and `email` search params, validates input with Zod (`email` + optional `inviteCode`), and submits via a Server Action. Has dedicated `loading.tsx` / `error.tsx`.                                                        |
-| `/invite-family` | [https://housemira.com/invite-family](https://housemira.com/invite-family)                                                                                                                            | Invite sending flow. `InviteFamilyForm` collects `to`, `locale`, `inviterName`, `familyName`, `inviteCode` and submits via the `sendInviteAction` Server Action, which POSTs the payload to the Supabase `resend-email-v1` Edge Function. Has dedicated `loading.tsx` / `error.tsx`. |
-| `/privacy`       | [https://housemira.com/privacy](https://housemira.com/privacy)                                                                                                                                        | Privacy Policy page. Shared landing `Header`/`Footer` plus `PrivacyContent` (content from `src/features/privacy/lib/content.ts`).                                                                                                                                                    |
-| `/terms`         | [https://housemira.com/terms](https://housemira.com/terms)                                                                                                                                            | Terms and Conditions page. Shared landing `Header`/`Footer` plus `TermsContent` (content from `src/features/terms/lib/content.ts`).                                                                                                                                                  |
+| Route            | Live URL                                                                                                                                                                                              | Description                                                                                                                                                                                                                                                                                                                                         |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`              | [https://housemira.com](https://housemira.com)                                                                                                                                                        | Marketing landing page. Hero with phone mockup, feature grid (Smart Reminders, Shared Calendar, Private Family Circles), How It Works, CTA, Footer.                                                                                                                                                                                                 |
+| `/join-family`   | [https://housemira.com/join-family](https://housemira.com/join-family) — try with demo code: [https://housemira.com/join-family?code=FAMILY-1234](https://housemira.com/join-family?code=FAMILY-1234) | Invite acceptance flow. Reads optional `code`/`inviteCode` and `email` search params, validates input with Zod (`email` + optional `inviteCode`), and submits via a Server Action. Has dedicated `loading.tsx` / `error.tsx`.                                                                                                                       |
+| `/login`         | [https://housemira.com/login](https://housemira.com/login)                                                                                                                                            | Email/password sign-in with Supabase Auth. The `loginAction` Server Action validates input with Zod and calls `supabase.auth.signInWithPassword` using the anon key on the server only; auth cookies are written via `@supabase/ssr`. The landing header, hero, and CTA “Get Started” buttons link here. Has dedicated `loading.tsx` / `error.tsx`. |
+| `/invite-family` | [https://housemira.com/invite-family](https://housemira.com/invite-family)                                                                                                                            | Invite sending flow. `InviteFamilyForm` collects `to`, `locale`, `inviterName`, `familyName`, `inviteCode` and submits via the `sendInviteAction` Server Action, which POSTs the payload to the Supabase `resend-email-v1` Edge Function. Has dedicated `loading.tsx` / `error.tsx`.                                                                |
+| `/privacy`       | [https://housemira.com/privacy](https://housemira.com/privacy)                                                                                                                                        | Privacy Policy page. Shared landing `Header`/`Footer` plus `PrivacyContent` (content from `src/features/privacy/lib/content.ts`).                                                                                                                                                                                                                   |
+| `/terms`         | [https://housemira.com/terms](https://housemira.com/terms)                                                                                                                                            | Terms and Conditions page. Shared landing `Header`/`Footer` plus `TermsContent` (content from `src/features/terms/lib/content.ts`).                                                                                                                                                                                                                 |
 
 Redirects (see `next.config.ts`): `/notes`, `/notes/:path*`, `/pricing`, `/pricing/:path*` → `/` (permanent). Shared Notes was sunset (PR #14) and the pricing page was removed, so stale bookmarks/crawlers land on home instead of a 404.
 
-Every async route group ships `loading.tsx` + `error.tsx` (root + `join-family` + `invite-family`).
+Every async route group ships `loading.tsx` + `error.tsx` (root + `join-family` + `invite-family` + `login`).
 
 ## Tech stack
 
@@ -51,6 +52,7 @@ src/components/      # shared UI (PascalCase.tsx, co-located *.test.tsx)
 src/features/<name>/ # feature slice: components/, hooks/, lib/, schemas.ts, actions.ts
   join-family/       # JoinFamilyForm (+ Server Action), schemas, invite-code helpers
   invite-family/     # InviteFamilyForm + sendInviteAction Server Action + resend-email-v1 Edge Function client
+  auth/              # LoginForm + loginAction, schemas, safe auth-error mapping
   privacy/           # PrivacyContent + lib/content.ts
   terms/             # TermsContent + lib/content.ts
 src/lib/             # env.ts (Zod-validated env), utils.ts (cn(), formatDate)
@@ -90,9 +92,11 @@ UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
 with a clear message when it is missing, instead of silently targeting a
 hardcoded project. Empty strings are treated as unset
 (`src/lib/env.ts`). `SUPABASE_ANON_KEY` is optional at startup but required
-to actually send invites — without it the invite Server Action returns the
-generic `Could not send invite. Try again.` error before any network call
-(the missing-key detail is logged server-side with `console.error` only).
+for `/login` (the action fails closed with a generic message when it is
+missing) and to actually send invites — without it the invite Server Action
+returns the generic `Could not send invite. Try again.` error before any
+network call (the missing-key detail is logged server-side with
+`console.error` only).
 
 ## Invite email authorization & abuse protection
 
@@ -118,10 +122,11 @@ Sending email is an abuse vector, so the `/invite-family` flow is layered:
   client identifier, not a secrecy boundary. The Edge Function itself MUST
   verify the caller's Supabase JWT (service-role check / allowlisted sender)
   and enforce its own rate limits; otherwise anyone who learns the endpoint
-  can send email through it. This app has no session/auth yet — once app-level
-  auth lands, `sendInviteAction`
-  (`src/features/invite-family/actions.ts`) must additionally require a valid
-  session and fail closed (generic error) when there is none.
+  can send email through it. The invite action does not require a session
+  yet (app-level auth now exists at `/login`, but `sendInviteAction` still
+  accepts anonymous callers). Once the invite flow is put behind auth it
+  must additionally require a valid session and fail closed (generic error)
+  when there is none.
 - **Honeypot:** the form renders a hidden `website` input that humans never
   fill. Submissions with a filled honeypot get a fake success and never reach
   the Edge Function.
@@ -185,7 +190,7 @@ After any code change, run in order: `lint` → `typecheck` → `test`. For rout
 ## Testing
 
 - Unit/integration: Vitest (jsdom) + Testing Library + user-event. Co-located `*.test.tsx` next to source, `src/lib/*.test.ts` for utils. Query by role/label (`getByRole`, `getByLabelText`); mock server boundaries (`fetch`, Server Actions), not internals. Required coverage: pure utils, Server Actions (happy path + Zod rejection + auth), critical UI states (loading/empty/error). Coverage thresholds: 80% lines/functions/branches.
-- E2E: specs in `e2e/*.spec.ts` (home, join-family, invite-family, support, privacy, terms) run against `npm run build && npm start` in CI. Never hit real third-party APIs — seed local data or mock. `playwright.config.ts` starts its own server on `:3100` with a credential-free environment (empty `JOIN_FAMILY_SHARED_SECRET` / `TURNSTILE_SECRET_KEY` / Upstash vars), so the specs can never reach a live Supabase, Turnstile, or Upstash endpoint — not even through a local `.env.local`. `SUPABASE_URL` points at the local PostgREST mock in `e2e/fixtures/supabase-mock.mjs`, which serves the `/support` FAQ fixtures.
+- E2E: specs in `e2e/*.spec.ts` (home, login, join-family, invite-family, support, privacy, terms) run against `npm run build && npm start` in CI. Never hit real third-party APIs — seed local data or mock. `playwright.config.ts` starts its own server on `:3100` with a credential-free environment (empty `JOIN_FAMILY_SHARED_SECRET` / `TURNSTILE_SECRET_KEY` / Upstash vars), so the specs can never reach a live Supabase, Turnstile, or Upstash endpoint — not even through a local `.env.local`. `SUPABASE_URL` points at the local mock in `e2e/fixtures/supabase-mock.mjs`, which serves the `/support` FAQ fixtures and a password-grant `/auth/v1/token` stand-in for `/login`.
 
 ## Contributing
 
