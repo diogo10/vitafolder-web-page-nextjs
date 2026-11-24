@@ -12,6 +12,11 @@ describe("Header", () => {
     expect(screen.queryByRole("link", { name: /^pricing$/i })).not.toBeInTheDocument();
   });
 
+  it("links Get Started to the login page", () => {
+    render(<Header />);
+    expect(screen.getByRole("link", { name: /get started/i })).toHaveAttribute("href", "/login");
+  });
+
   it("toggles the mobile menu open and closed", async () => {
     const user = userEvent.setup();
     render(<Header />);

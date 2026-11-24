@@ -38,7 +38,10 @@ describe("CtaSection", () => {
     expect(
       screen.getByRole("heading", { name: /ready to simplify family life/i })
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /get started for free/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /get started for free/i })).toHaveAttribute(
+      "href",
+      "/login"
+    );
     expect(screen.getByRole("link", { name: /google play/i })).toBeInTheDocument();
   });
 

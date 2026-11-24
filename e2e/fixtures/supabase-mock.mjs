@@ -61,6 +61,73 @@ function selectFaqs(url) {
   );
 }
 
+/**
+ * Minimal GoTrue password-grant stand-in for `/login` E2E coverage.
+ * The anon key is a public client identifier, so only the test credentials
+ * below can ever produce a session.
+ */
+const E2E_USER = {
+  id: "44444444-4444-4444-8444-444444444444",
+  email: "ada@example.com",
+  password: "e2e-valid-password",
+};
+
+function encodeJwt(payload) {
+  return Buffer.from(JSON.stringify(payload)).toString("base64url");
+}
+
+function buildAccessToken() {
+  const now = Math.floor(Date.now() / 1000);
+  const header = encodeJwt({ alg: "HS256", typ: "JWT" });
+  const payload = encodeJwt({
+    aud: "authenticated",
+    exp: now + 3600,
+    iat: now,
+    role: "authenticated",
+    sub: E2E_USER.id,
+    email: E2E_USER.email,
+  });
+  return `${header}.${payload}.e2e-signature`;
+}
+
+async function readJsonBody(request) {
+  let body = "";
+  for await (const chunk of request) body += chunk;
+  if (!body) return {};
+  try {
+    return JSON.parse(body);
+  } catch {
+    return {};
+  }
+}
+
+function signInResponse() {
+  const now = new Date().toISOString();
+  return {
+    access_token: buildAccessToken(),
+    token_type: "bearer",
+    expires_in: 3600,
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+    refresh_token: "e2e-refresh-token",
+    user: {
+      id: E2E_USER.id,
+      aud: "authenticated",
+      role: "authenticated",
+      email: E2E_USER.email,
+      email_confirmed_at: now,
+      phone: "",
+      confirmed_at: now,
+      last_sign_in_at: now,
+      app_metadata: { provider: "email", providers: ["email"] },
+      user_metadata: {},
+      identities: [],
+      created_at: now,
+      updated_at: now,
+      is_anonymous: false,
+    },
+  };
+}
+
 function sendJson(response, status, payload) {
   const body = JSON.stringify(payload);
   response.writeHead(status, {
@@ -70,8 +137,23 @@ function sendJson(response, status, payload) {
   response.end(body);
 }
 
-const server = createServer((request, response) => {
+const server = createServer(async (request, response) => {
   const url = new URL(request.url ?? "/", `http://127.0.0.1:${PORT}`);
+
+  if (url.pathname === "/auth/v1/token" && request.method === "POST") {
+    const payload = await readJsonBody(request);
+    if (payload.email === E2E_USER.email && payload.password === E2E_USER.password) {
+      sendJson(response, 200, signInResponse());
+      return;
+    }
+    sendJson(response, 400, {
+      code: "invalid_credentials",
+      error_code: "invalid_credentials",
+      message: "Invalid login credentials",
+      msg: "Invalid login credentials",
+    });
+    return;
+  }
 
   if (url.pathname === "/rest/v1/faqs") {
     sendJson(response, 200, selectFaqs(url));

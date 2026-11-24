@@ -31,7 +31,7 @@ export function Hero() {
           </p>
           <div className="mt-7 flex flex-wrap items-center gap-3">
             <Link
-              href="#get-started"
+              href="/login"
               className="inline-flex items-center justify-center rounded-md bg-brand px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-brand-deep"
             >
               Start for free

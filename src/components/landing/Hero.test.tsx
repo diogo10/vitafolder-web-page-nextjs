@@ -6,10 +6,7 @@ describe("Hero", () => {
   it("renders the headline and calls to action", () => {
     render(<Hero />);
     expect(screen.getByRole("heading", { name: /run your home like a pro/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /start for free/i })).toHaveAttribute(
-      "href",
-      "#get-started"
-    );
+    expect(screen.getByRole("link", { name: /start for free/i })).toHaveAttribute("href", "/login");
     expect(screen.getByAltText(/family organizing their week/i)).toBeInTheDocument();
   });
 

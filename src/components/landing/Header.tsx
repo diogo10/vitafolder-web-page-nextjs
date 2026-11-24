@@ -45,7 +45,7 @@ export function Header() {
             </Link>
           ))}
           <Link
-            href="/#get-started"
+            href="/login"
             className="rounded-md bg-brand px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-brand-deep"
           >
             Get Started
@@ -112,7 +112,7 @@ export function Header() {
             ))}
             <li>
               <Link
-                href="/#get-started"
+                href="/login"
                 onClick={() => setMenuOpen(false)}
                 className="mt-1 block rounded-md bg-brand px-3 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-brand-deep"
               >
