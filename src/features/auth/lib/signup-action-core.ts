@@ -34,8 +34,8 @@ const signupRequestSchema = signupSchema.extend({
 export type SignupActionTestOverrides = {
   /**
    * Key for rate limiting. `undefined` (default) resolves the sender IP /
-   * cookie and falls back to the email address; pass `null` to simulate a
-   * request with no usable key (fail-closed path).
+   * cookie; pass `null` to simulate a request with no usable key (fail-closed
+   * path). There is deliberately no email fallback.
    */
   rateLimitKey?: string | null;
   /**
@@ -57,13 +57,15 @@ function getDashboardRedirectUrl(): string {
  * Abuse protection reuses the invite-family utilities:
  * - Honeypot: a filled `website` field is silently accepted without creating
  *   an account.
+ * - Rate limiting first: a 5 requests/minute per-sender limiter (namespaced
+ *   `signup:`) runs before any Turnstile network call or Supabase write. It
+ *   uses shared Redis when Upstash is configured, otherwise the in-memory
+ *   limiter. When no request IP/cookie can be resolved the request fails
+ *   closed with a generic rate-limit error instead of sharing a global bucket.
  * - Bot gate: when `TURNSTILE_SECRET_KEY` is configured, a valid Turnstile
- *   token is required before calling Supabase.
- * - Rate limiting: a 5 requests/minute per-sender limiter runs before the
- *   Supabase call. It uses shared Redis when Upstash is configured, otherwise
- *   the in-memory limiter. When no request IP/cookie can be resolved, the
- *   email address is used as the bucket key so signup still cannot be
- *   hammered anonymously.
+ *   token is required before calling Supabase. Verification happens only
+ *   after the rate limit has accepted the request, so unverified traffic
+ *   cannot use the verifier as a free upstream amplifier.
  * - Validation first: invalid payloads and honeypot hits never consume
  *   rate-limit budget.
  *
@@ -97,6 +99,14 @@ export async function executeSignupAction(
   const { website: _website, turnstileToken, ...credentials } = result.data;
   void _website;
 
+  // Rate limit before Turnstile: a rejected sender must not be able to make
+  // the server call Cloudflare on its behalf.
+  const rateLimitKey =
+    overrides.rateLimitKey !== undefined ? overrides.rateLimitKey : await resolveRateLimitKey();
+  if (!rateLimitKey || !(await checkInviteRateLimitForKey(rateLimitKey, { prefix: "signup" })).ok) {
+    return { ok: false, errors: { form: getSignupErrorMessage({ code: "too_many_requests" }) } };
+  }
+
   const turnstileSecret =
     overrides.turnstileSecret !== undefined ? overrides.turnstileSecret : env.TURNSTILE_SECRET_KEY;
   if (turnstileSecret) {
@@ -106,14 +116,6 @@ export async function executeSignupAction(
     if (!verified) {
       return { ok: false, errors: { form: getSignupErrorMessage({ code: "unexpected_failure" }) } };
     }
-  }
-
-  const rateLimitKey =
-    overrides.rateLimitKey !== undefined
-      ? overrides.rateLimitKey
-      : ((await resolveRateLimitKey()) ?? `email:${credentials.email.toLowerCase()}`);
-  if (!rateLimitKey || !(await checkInviteRateLimitForKey(rateLimitKey)).ok) {
-    return { ok: false, errors: { form: getSignupErrorMessage({ code: "too_many_requests" }) } };
   }
 
   const supabase = await createSupabaseServerClient();

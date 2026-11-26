@@ -5,9 +5,13 @@ import { loginAction, logoutAction, signupAction } from "./actions";
 
 const revalidatePathMock = vi.hoisted(() => vi.fn());
 const redirectMock = vi.hoisted(() => vi.fn());
+const resolveRateLimitKeyMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: vi.fn(),
+}));
+vi.mock("@/lib/rate-limit-key", () => ({
+  resolveRateLimitKey: resolveRateLimitKeyMock,
 }));
 vi.mock("next/cache", () => ({ revalidatePath: revalidatePathMock }));
 vi.mock("next/navigation", () => ({ redirect: redirectMock }));
@@ -30,6 +34,8 @@ beforeEach(() => {
   signOut.mockReset();
   revalidatePathMock.mockReset();
   redirectMock.mockReset();
+  resolveRateLimitKeyMock.mockReset();
+  resolveRateLimitKeyMock.mockResolvedValue("ip:test-sender");
   resetInviteRateLimits();
 });
 
@@ -181,6 +187,17 @@ describe("signupAction", () => {
     errorSpy.mockRestore();
   });
 
+  it("fails closed when no sender key can be resolved", async () => {
+    resolveRateLimitKeyMock.mockResolvedValue(null);
+    useFakeClient();
+
+    const result = await signupAction({ email: "ada@example.com", password: "password123" });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.form).toMatch(/too many signup attempts/i);
+    expect(signUp).not.toHaveBeenCalled();
+  });
+
   it("maps a duplicate account to a safe form error", async () => {
     useFakeClient();
     signUp.mockResolvedValue({
@@ -229,6 +246,18 @@ describe("logoutAction", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     useFakeClient();
     signOut.mockResolvedValue({ error: { message: "network down" } });
+
+    await logoutAction();
+
+    expect(errorSpy).toHaveBeenCalled();
+    expect(redirectMock).toHaveBeenCalledWith("/login");
+    errorSpy.mockRestore();
+  });
+
+  it("still returns to the login page when sign-out throws", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    useFakeClient();
+    signOut.mockRejectedValue(new Error("network down"));
 
     await logoutAction();
 

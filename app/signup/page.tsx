@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Footer } from "@/components/landing/Footer";
 import { Logo } from "@/components/landing/Logo";
 import { SignupForm } from "@/features/auth/components/SignupForm";
+import { env } from "@/lib/env";
 
 export const metadata: Metadata = {
   title: "HouseMira — Create your account",
@@ -42,7 +43,7 @@ export default function SignupPage() {
               Sign up with your email to start running your home in one calm place.
             </p>
 
-            <SignupForm />
+            <SignupForm turnstileSiteKey={env.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
           </div>
 
           <p className="mt-6 text-center text-[13px] text-mist">

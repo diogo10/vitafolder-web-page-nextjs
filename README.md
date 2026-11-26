@@ -59,6 +59,8 @@ src/features/<name>/ # feature slice: components/, hooks/, lib/, schemas.ts, act
   privacy/           # PrivacyContent + lib/content.ts
   terms/             # TermsContent + lib/content.ts
 src/lib/             # env.ts (Zod-validated env), utils.ts (cn(), formatDate), rate-limit-key.ts
+  supabase/          # server client + protected-route session refresh
+middleware.ts        # Next entry point (matcher: /dashboard) calling updateSupabaseSession
 public/              # static assets
 e2e/                 # Playwright specs (home, login, signup, join-family, invite-family, support, privacy, terms)
   fixtures/          # local Supabase mock (e2e/fixtures/supabase-mock.mjs)
@@ -86,6 +88,7 @@ SUPABASE_JOIN_FUNCTION_NAME=join-family-v1
 # Shared secret for join-family-v1 trusted-backend mode (server-only,
 # sent as x-join-secret; must match the secret configured on the function).
 JOIN_FAMILY_SHARED_SECRET=[YOUR_JOIN_SECRET]
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=[YOUR_TURNSTILE_SITE_KEY]
 TURNSTILE_SECRET_KEY=[YOUR_TURNSTILE_SECRET]
 UPSTASH_REDIS_REST_URL=https://your-db.upstash.io
 UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
@@ -99,9 +102,14 @@ for `/login`, `/signup`, and `/dashboard` (the actions fail closed with a
 generic message when it is missing) and to actually send invites — without it
 the invite Server Action returns the generic `Could not send invite. Try
 again.` error before any network call (the missing-key detail is logged
-server-side with `console.error` only). `TURNSTILE_SECRET_KEY` gates the
-invite and signup bot checks; `UPSTASH_REDIS_REST_URL` +
-`UPSTASH_REDIS_REST_TOKEN` move both rate limiters to shared Redis.
+server-side with `console.error` only). `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
+renders the Cloudflare widget in the signup and invite forms;
+`TURNSTILE_SECRET_KEY` verifies the token server-side. Set both together: if
+the secret is configured without a site key, submissions fail closed.
+`UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` move both rate limiters
+to shared Redis. `middleware.ts` (with the implementation in
+`src/lib/supabase/middleware.ts`) refreshes the Supabase session for
+`/dashboard` on every request.
 
 ## Invite email authorization & abuse protection
 
@@ -117,9 +125,11 @@ Sending email is an abuse vector, so the `/invite-family` flow is layered:
 - **Bot gate (Turnstile) with production fail-closed.** When
   `TURNSTILE_SECRET_KEY` is set, the action requires a valid Cloudflare
   Turnstile token (verified server-side in
-  `src/features/invite-family/lib/verify-turnstile.ts`) before sending.
-  When no secret is configured, the action fails closed in production
-  (generic error, server-side `console.error`) and only sends in dev/test.
+  `src/features/invite-family/lib/verify-turnstile.ts`) before sending. The
+  form renders the widget from `src/components/TurnstileWidget.tsx` when
+  `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is configured. When no secret is
+  configured, the action fails closed in production (generic error,
+  server-side `console.error`) and only sends in dev/test.
   Do not expose the form publicly until Turnstile (or app-level session
   auth) is enforced.
 - **Authorization boundary = the Supabase `resend-email-v1` Edge Function.**
@@ -149,6 +159,8 @@ Sending email is an abuse vector, so the `/invite-family` flow is layered:
   a pass-through value from an untrusted proxy. When no IP can be resolved
   the action fails closed (generic rate-limit error) instead of sharing a
   global bucket.
+  The default namespace is `invite`; signup uses `signup`, so the two
+  budgets never consume each other.
 - **Error hygiene:** Edge Function status/detail is logged server-side with
   `console.error` (truncated to 500 chars) and never surfaced — clients only
   receive `Could not send invite. Try again.` (including when
@@ -179,21 +191,29 @@ Sending email is an abuse vector, so the `/invite-family` flow is layered:
 `/signup` reuses the invite flow’s abuse utilities so public account creation
 cannot be hammered:
 
-- **Rate limiting:** `signupAction` calls the same
-  `checkInviteRateLimitForKey` limiter (5 requests/minute) before touching
-  Supabase. Shared Upstash Redis is used when configured; otherwise the
-  in-memory limiter applies to a single-instance rollout. When no request
-  IP/cookie can be resolved, the normalized email address is used as the
-  bucket key instead of a shared global bucket.
-- **Bot gate (Turnstile):** when `TURNSTILE_SECRET_KEY` is set,
-  `signupAction` requires a valid Cloudflare Turnstile token, verified with
-  `verifyTurnstileToken` (the invite flow’s verifier). The token is passed to
-  `SignupForm` as a prop, matching `InviteFamilyForm`.
+- **Rate limiting first:** `signupAction` calls the same
+  `checkInviteRateLimitForKey` limiter (5 requests/minute) with the
+  `signup` namespace **before** Turnstile verification. Shared Upstash Redis
+  is used when configured; otherwise the in-memory limiter applies to a
+  single-instance rollout. When no request IP/cookie can be resolved the
+  action fails closed with a generic rate-limit error instead of falling back
+  to the email address or a shared global bucket.
+- **Bot gate (Turnstile):** the form renders Cloudflare's widget via
+  `src/components/TurnstileWidget.tsx` when `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
+  is set, and passes the resulting token to `signupAction`. When
+  `TURNSTILE_SECRET_KEY` is configured the token is required and verified
+  with `verifyTurnstileToken` (the invite flow's verifier); a missing or
+  invalid token fails closed. Tokens are single-use, so the form remounts the
+  widget after a failed submit.
 - **Honeypot:** a hidden `website` input gives bots a fake success without
   creating an account.
 - **Length caps:** `signupSchema` rejects emails over 254 characters and
   passwords over 72 characters (and still requires at least 8), limiting
   oversized payloads before they reach Supabase.
+- **Session refresh:** `middleware.ts` calls
+  `src/lib/supabase/middleware.ts`, which runs `supabase.auth.getUser()` for
+  `/dashboard`, forwards refreshed auth cookies, and redirects invalid
+  sessions to `/login?next=...`.
 
 ## Commands
 

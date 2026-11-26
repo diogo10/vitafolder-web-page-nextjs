@@ -14,11 +14,16 @@ test("login page links to signup below the invite link", async ({ page }) => {
   await expect(invite).toBeVisible();
   await expect(signup).toBeVisible();
 
-  const inviteBox = await invite.boundingBox();
-  const signupBox = await signup.boundingBox();
-  expect(inviteBox).not.toBeNull();
-  expect(signupBox).not.toBeNull();
-  expect(signupBox!.y).toBeGreaterThanOrEqual(inviteBox!.y);
+  // DOM order is the layout contract: the invite link must precede sign up.
+  const linkOrder = await page
+    .locator("main")
+    .evaluate((main) =>
+      Array.from(main.querySelectorAll("a")).map((link) => (link.textContent ?? "").trim())
+    );
+  const inviteIndex = linkOrder.findIndex((text) => /join with an invite/i.test(text));
+  const signupIndex = linkOrder.findIndex((text) => /^sign up$/i.test(text));
+  expect(inviteIndex).toBeGreaterThanOrEqual(0);
+  expect(signupIndex).toBeGreaterThan(inviteIndex);
 
   await signup.click();
   await expect(page).toHaveURL(/\/signup$/);

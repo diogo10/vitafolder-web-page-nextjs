@@ -11,6 +11,7 @@ const routerMock = vi.hoisted(() => ({
 
 vi.mock("../actions", () => ({ signupAction: signupActionMock }));
 vi.mock("next/navigation", () => ({ useRouter: () => routerMock }));
+vi.mock("@/components/TurnstileWidget", () => ({ TurnstileWidget: () => null }));
 
 beforeEach(() => {
   signupActionMock.mockReset();
@@ -68,6 +69,18 @@ describe("SignupForm", () => {
     });
     await waitFor(() => expect(routerMock.replace).toHaveBeenCalledWith("/dashboard"));
     expect(routerMock.refresh).toHaveBeenCalled();
+  });
+
+  it("asks for a Turnstile token before calling the action when a site key is set", async () => {
+    const user = userEvent.setup();
+    render(<SignupForm turnstileSiteKey="test-site-key" />);
+
+    await user.type(screen.getByLabelText(/email address/i), "ada@example.com");
+    await user.type(screen.getByLabelText(/^password$/i), "password123");
+    await user.click(screen.getByRole("button", { name: /^create account$/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/verification challenge/i);
+    expect(signupActionMock).not.toHaveBeenCalled();
   });
 
   it("asks the user to confirm their email when no session is returned", async () => {

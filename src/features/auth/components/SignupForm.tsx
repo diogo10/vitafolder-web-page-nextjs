@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
 import { cn } from "@/lib/utils";
 import { signupAction } from "../actions";
 import { signupSchema } from "../schemas";
@@ -14,23 +15,35 @@ type SignupErrors = {
 
 type SignupFormProps = {
   /**
-   * Cloudflare Turnstile client token. Verified server-side whenever
-   * `TURNSTILE_SECRET_KEY` is configured (see README); empty in dev/test.
+   * Cloudflare Turnstile site key (`NEXT_PUBLIC_TURNSTILE_SITE_KEY`). When
+   * provided, the widget renders and its token is verified server-side
+   * whenever `TURNSTILE_SECRET_KEY` is configured (see README). Empty in
+   * dev/test, where the widget is skipped.
    */
-  turnstileToken?: string;
+  turnstileSiteKey?: string;
 };
 
-export function SignupForm({ turnstileToken = "" }: SignupFormProps) {
+export function SignupForm({ turnstileSiteKey }: SignupFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   // Honeypot: hidden from humans; bots that fill it are silently dropped by
   // the Server Action (see `signupAction`).
   const [website, setWebsite] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  // Turnstile tokens are single-use. Remount the widget after a failed submit
+  // so the user can retry instead of re-sending a consumed token.
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<SignupErrors>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+
+  function resetTurnstile() {
+    if (!turnstileSiteKey) return;
+    setTurnstileToken("");
+    setTurnstileResetKey((key) => key + 1);
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -48,6 +61,12 @@ export function SignupForm({ turnstileToken = "" }: SignupFormProps) {
       return;
     }
 
+    if (turnstileSiteKey && !turnstileToken) {
+      setErrors({ form: "Complete the verification challenge before creating your account." });
+      setNotice(null);
+      return;
+    }
+
     setErrors({});
     setNotice(null);
     setIsPending(true);
@@ -55,6 +74,7 @@ export function SignupForm({ turnstileToken = "" }: SignupFormProps) {
       const result = await signupAction({ ...parsed.data, website, turnstileToken });
       if (!result.ok) {
         setErrors(result.errors);
+        resetTurnstile();
         return;
       }
 
@@ -69,6 +89,7 @@ export function SignupForm({ turnstileToken = "" }: SignupFormProps) {
       router.refresh();
     } catch {
       setErrors({ form: "We couldn't create your account. Please try again." });
+      resetTurnstile();
     } finally {
       setIsPending(false);
     }
@@ -189,6 +210,14 @@ export function SignupForm({ turnstileToken = "" }: SignupFormProps) {
           </p>
         )}
       </div>
+
+      <TurnstileWidget
+        key={turnstileResetKey}
+        siteKey={turnstileSiteKey}
+        action="signup"
+        onToken={setTurnstileToken}
+        onExpire={() => setTurnstileToken("")}
+      />
 
       <button
         type="submit"

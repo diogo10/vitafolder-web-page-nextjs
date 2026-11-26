@@ -13,6 +13,10 @@ const SHARED_TIMEOUT_MS = 5_000;
  * in-memory limiter and the rollout MUST stay single-instance (see README
  * "Invite email authorization & abuse protection").
  *
+ * Namespacing: `prefix` (default `invite`) keeps unrelated actions from
+ * sharing a bucket. Public signup passes `"signup"`, so invite and signup
+ * budgets are counted separately in both Redis and the in-memory fallback.
+ *
  * Fail-closed: any shared-store error (network, auth, unexpected shape)
  * returns `{ ok: false }` so abuse cannot slip through uncounted.
  */
@@ -23,10 +27,15 @@ export function isSharedRateLimitConfigured(envVars?: { url?: string; token?: st
   return Boolean(url && token);
 }
 
-function toRedisKey(key: string, now: number, windowMs: number): string {
+function normalizePrefix(prefix: string | undefined): string {
+  const safe = (prefix ?? "invite").replace(/[^a-zA-Z0-9:_-]/g, "_").slice(0, 40);
+  return safe || "invite";
+}
+
+function toRedisKey(key: string, now: number, windowMs: number, prefix?: string): string {
   const windowId = Math.floor(now / windowMs);
   const safe = key.replace(/[^a-zA-Z0-9:._-]/g, "_").slice(0, 160);
-  return `invite:${safe}:${windowId}`;
+  return `${normalizePrefix(prefix)}:${safe}:${windowId}`;
 }
 
 export type SharedRateLimitOptions = {
@@ -36,6 +45,11 @@ export type SharedRateLimitOptions = {
   restUrl?: string;
   restToken?: string;
   fetchFn?: typeof fetch;
+  /**
+   * Redis / in-memory namespace. Keep independent budgets separate (for
+   * example, signup must not share invite's bucket); defaults to `invite`.
+   */
+  prefix?: string;
 };
 
 export async function checkInviteRateLimitShared(
@@ -45,14 +59,17 @@ export async function checkInviteRateLimitShared(
   const now = options.now ?? Date.now();
   const windowMs = options.windowMs ?? 60_000;
   const maxRequests = options.maxRequests ?? 5;
+  const prefix = normalizePrefix(options.prefix);
   const restUrl = (options.restUrl ?? process.env.UPSTASH_REDIS_REST_URL)?.replace(/\/+$/, "");
   const restToken = options.restToken ?? process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!restUrl || !restToken) {
-    return checkInviteRateLimit(key, { now, windowMs, maxRequests });
+    // Namespace the in-memory fallback too so a signup request cannot consume
+    // another action's budget (and vice versa).
+    return checkInviteRateLimit(`${prefix}:${key}`, { now, windowMs, maxRequests });
   }
 
   const fetchFn = options.fetchFn ?? fetch;
-  const redisKey = toRedisKey(key, now, windowMs);
+  const redisKey = toRedisKey(key, now, windowMs, prefix);
   const windowSeconds = Math.max(1, Math.ceil(windowMs / 1000));
   try {
     const incrResponse = await fetchFn(`${restUrl}/incr/${encodeURIComponent(redisKey)}`, {
@@ -84,8 +101,10 @@ export async function checkInviteRateLimitShared(
 }
 
 /**
- * Single entry point for the invite action: shared store when configured,
- * otherwise in-memory (single-instance rollout only).
+ * Single entry point for public Server Actions: shared store when configured,
+ * otherwise in-memory (single-instance rollout only). Callers that need an
+ * independent budget pass `prefix` (signup uses `"signup"`; the default is
+ * `"invite"`).
  */
 export async function checkInviteRateLimitForKey(
   key: string,

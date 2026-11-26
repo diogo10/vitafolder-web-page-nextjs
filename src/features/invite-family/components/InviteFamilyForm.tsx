@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
 import { cn } from "@/lib/utils";
 import { sendInviteAction, type InviteFamilyActionErrors } from "../actions";
 import { getInviteFamilyStrings, inviteFamilyLocales } from "../lib/strings";
@@ -9,10 +10,11 @@ import { inviteFamilySchema } from "../schemas";
 type InviteFamilyFormProps = {
   initialInviteCode?: string;
   /**
-   * Cloudflare Turnstile client token. Wired to the Turnstile widget when
-   * `TURNSTILE_SECRET_KEY` is configured (see README); empty in dev/test.
+   * Cloudflare Turnstile site key (`NEXT_PUBLIC_TURNSTILE_SITE_KEY`). When
+   * provided, the widget renders and its token is verified server-side when
+   * `TURNSTILE_SECRET_KEY` is configured (see README). Empty in dev/test.
    */
-  turnstileToken?: string;
+  turnstileSiteKey?: string;
 };
 
 const inputClass =
@@ -27,7 +29,7 @@ function fieldShell(hasError: boolean): string {
 
 export function InviteFamilyForm({
   initialInviteCode = "",
-  turnstileToken = "",
+  turnstileSiteKey,
 }: InviteFamilyFormProps) {
   const [to, setTo] = useState("");
   const [locale, setLocale] = useState("en");
@@ -37,12 +39,21 @@ export function InviteFamilyForm({
   // Honeypot: hidden from humans; bots that fill it are silently dropped by
   // the Server Action (see `sendInviteAction`).
   const [website, setWebsite] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  // Tokens are single-use; remount the widget after a failed submit.
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [errors, setErrors] = useState<InviteFamilyActionErrors>({});
   const [formError, setFormError] = useState("");
   const [sentTo, setSentTo] = useState("");
   const [isPending, setIsPending] = useState(false);
 
   const strings = getInviteFamilyStrings(locale);
+
+  function resetTurnstile() {
+    if (!turnstileSiteKey) return;
+    setTurnstileToken("");
+    setTurnstileResetKey((key) => key + 1);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -64,6 +75,12 @@ export function InviteFamilyForm({
       setSentTo("");
       return;
     }
+    if (turnstileSiteKey && !turnstileToken) {
+      setErrors({});
+      setFormError("Complete the verification challenge before sending the invite.");
+      setSentTo("");
+      return;
+    }
     setErrors({});
     setFormError("");
     setSentTo("");
@@ -73,12 +90,14 @@ export function InviteFamilyForm({
       if (!result.ok) {
         setErrors(result.errors);
         setFormError(result.formError ?? "");
+        resetTurnstile();
         return;
       }
       setSentTo(parsed.data.to);
     } catch {
       setErrors({});
       setFormError(strings.genericError);
+      resetTurnstile();
     } finally {
       setIsPending(false);
     }
@@ -252,6 +271,14 @@ export function InviteFamilyForm({
             )}
           </div>
         </div>
+
+        <TurnstileWidget
+          key={turnstileResetKey}
+          siteKey={turnstileSiteKey}
+          action="invite"
+          onToken={setTurnstileToken}
+          onExpire={() => setTurnstileToken("")}
+        />
 
         <button
           type="submit"

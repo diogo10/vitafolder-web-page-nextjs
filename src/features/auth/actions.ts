@@ -61,15 +61,22 @@ export async function signupAction(input: unknown): Promise<SignupActionResult> 
 }
 
 export async function logoutAction(): Promise<void> {
-  const supabase = await createSupabaseServerClient();
+  try {
+    const supabase = await createSupabaseServerClient();
 
-  if (supabase) {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error(`[auth] sign-out failed: ${error.message}`);
+    if (supabase) {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error(`[auth] sign-out failed: ${error.message}`);
+      }
     }
+  } catch (error) {
+    // Never trap the user on a protected page because the provider errored.
+    console.error(
+      `[auth] sign-out failed: ${error instanceof Error ? error.message : String(error)}`
+    );
+  } finally {
+    revalidatePath("/", "layout");
+    redirect("/login");
   }
-
-  revalidatePath("/", "layout");
-  redirect("/login");
 }

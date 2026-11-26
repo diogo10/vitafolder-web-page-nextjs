@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resetInviteRateLimits } from "@/features/invite-family/lib/rate-limit";
+import { checkInviteRateLimitForKey } from "@/features/invite-family/lib/rate-limit-store";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { executeSignupAction } from "./signup-action-core";
 
@@ -80,11 +81,42 @@ describe("executeSignupAction abuse protection", () => {
   });
 
   it("fails closed when no rate-limit key can be resolved", async () => {
-    const result = await executeSignupAction(validInput, { rateLimitKey: null });
+    const verifyTurnstile = vi.fn(async () => true);
+    const result = await executeSignupAction(validInput, {
+      rateLimitKey: null,
+      turnstileSecret: "test-secret",
+      verifyTurnstile,
+    });
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.errors.form).toMatch(/too many signup attempts/i);
+    expect(verifyTurnstile).not.toHaveBeenCalled();
     expect(createSupabaseServerClientMock).not.toHaveBeenCalled();
+  });
+
+  it("checks the rate limit before Turnstile verification", async () => {
+    useFakeClient();
+    signUp.mockResolvedValue({
+      data: { user: { id: "user-1" }, session: { access_token: "token" } },
+      error: null,
+    });
+
+    // Exhaust the signup-namespaced bucket for this sender.
+    for (let i = 0; i < 5; i += 1) {
+      await checkInviteRateLimitForKey("signup-order-key", { prefix: "signup" });
+    }
+
+    const verifyTurnstile = vi.fn(async () => true);
+    const result = await executeSignupAction(validInput, {
+      rateLimitKey: "signup-order-key",
+      turnstileSecret: "test-secret",
+      verifyTurnstile,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.form).toMatch(/too many signup attempts/i);
+    expect(verifyTurnstile).not.toHaveBeenCalled();
+    expect(signUp).not.toHaveBeenCalled();
   });
 
   it("requires a valid Turnstile token when a secret is configured", async () => {
