@@ -7,6 +7,7 @@ import { sendInviteAction } from "../actions";
 vi.mock("../actions", () => ({
   sendInviteAction: vi.fn(),
 }));
+vi.mock("@/components/TurnstileWidget", () => ({ TurnstileWidget: () => null }));
 
 const sendInviteActionMock = vi.mocked(sendInviteAction);
 
@@ -96,6 +97,15 @@ describe("InviteFamilyForm", () => {
     await fillValidForm(user);
     await user.click(screen.getByRole("button", { name: /send invite/i }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/could not send invite/i);
+  });
+
+  it("asks for a Turnstile token before sending when a site key is set", async () => {
+    const user = userEvent.setup();
+    render(<InviteFamilyForm turnstileSiteKey="test-site-key" />);
+    await fillValidForm(user);
+    await user.click(screen.getByRole("button", { name: /send invite/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/verification challenge/i);
+    expect(sendInviteActionMock).not.toHaveBeenCalled();
   });
 
   it("seeds the invite code once and ignores later prop changes", async () => {

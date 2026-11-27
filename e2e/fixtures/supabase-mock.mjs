@@ -1,14 +1,18 @@
 /**
- * Local PostgREST stand-in for the E2E suite.
+ * Local Supabase stand-in for the E2E suite.
  *
- * `/support` is a dynamic server component that reads the published FAQs from
- * Supabase over PostgREST. E2E must never call a live third-party API, so
- * this mock serves the same payload shape from a local port; the app reaches
- * it through `SUPABASE_URL` (see `playwright.config.ts`).
+ * The app reaches this mock through `SUPABASE_URL` (see
+ * `playwright.config.ts`). E2E must never call a live third-party API, so the
+ * mock serves both the PostgREST reads used by `/support` and the Supabase
+ * Auth routes used by `/login`, `/signup`, and `/dashboard`.
  *
  * Only the routes the app actually uses are implemented:
- *   GET /rest/v1/faqs?locale=eq.<locale>&select=...&order=...
- * Anything else answers 404, like PostgREST would for an unknown table.
+ *   GET  /rest/v1/faqs?locale=eq.<locale>&select=...&order=...
+ *   POST /auth/v1/token    password grant for `/login`
+ *   POST /auth/v1/signup   creates an account/session for `/signup`
+ *   GET  /auth/v1/user     resolves the bearer token for `/dashboard`
+ *   POST /auth/v1/logout   clears the session
+ * Anything else answers 404, like Supabase would for an unknown route.
  */
 
 import { Buffer } from "node:buffer";
@@ -72,11 +76,36 @@ const E2E_USER = {
   password: "e2e-valid-password",
 };
 
+const E2E_SIGNUP_USER = {
+  id: "55555555-5555-4555-8555-555555555555",
+  email: "new-user@example.com",
+};
+
+function buildUser({ id, email }) {
+  const now = new Date().toISOString();
+  return {
+    id,
+    aud: "authenticated",
+    role: "authenticated",
+    email,
+    email_confirmed_at: now,
+    phone: "",
+    confirmed_at: now,
+    last_sign_in_at: now,
+    app_metadata: { provider: "email", providers: ["email"] },
+    user_metadata: {},
+    identities: [],
+    created_at: now,
+    updated_at: now,
+    is_anonymous: false,
+  };
+}
+
 function encodeJwt(payload) {
   return Buffer.from(JSON.stringify(payload)).toString("base64url");
 }
 
-function buildAccessToken() {
+function buildAccessToken({ id, email }) {
   const now = Math.floor(Date.now() / 1000);
   const header = encodeJwt({ alg: "HS256", typ: "JWT" });
   const payload = encodeJwt({
@@ -84,10 +113,30 @@ function buildAccessToken() {
     exp: now + 3600,
     iat: now,
     role: "authenticated",
-    sub: E2E_USER.id,
-    email: E2E_USER.email,
+    sub: id,
+    email,
   });
   return `${header}.${payload}.e2e-signature`;
+}
+
+/**
+ * Resolve the user from a bearer token, mirroring GoTrue's `GET /user`.
+ * The token is a test-only JWT whose payload is readable base64url JSON; a
+ * missing or malformed token is unauthorized, exactly like the real API.
+ */
+function userFromAuthorization(request) {
+  const header = request.headers.authorization ?? "";
+  const token = header.startsWith("Bearer ") ? header.slice("Bearer ".length) : "";
+  const payload = token.split(".")[1];
+  if (!payload) return null;
+
+  try {
+    const claims = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    if (typeof claims.sub !== "string" || typeof claims.email !== "string") return null;
+    return buildUser({ id: claims.sub, email: claims.email });
+  } catch {
+    return null;
+  }
 }
 
 async function readJsonBody(request) {
@@ -104,7 +153,7 @@ async function readJsonBody(request) {
 function signInResponse() {
   const now = new Date().toISOString();
   return {
-    access_token: buildAccessToken(),
+    access_token: buildAccessToken(E2E_USER),
     token_type: "bearer",
     expires_in: 3600,
     expires_at: Math.floor(Date.now() / 1000) + 3600,
@@ -125,6 +174,21 @@ function signInResponse() {
       updated_at: now,
       is_anonymous: false,
     },
+  };
+}
+
+function signupResponse(email) {
+  const user = buildUser({
+    id: E2E_SIGNUP_USER.id,
+    email: email || E2E_SIGNUP_USER.email,
+  });
+  return {
+    access_token: buildAccessToken(user),
+    token_type: "bearer",
+    expires_in: 3600,
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+    refresh_token: "e2e-signup-refresh-token",
+    user,
   };
 }
 
@@ -155,6 +219,33 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  if (url.pathname === "/auth/v1/signup" && request.method === "POST") {
+    const payload = await readJsonBody(request);
+    sendJson(response, 200, signupResponse(payload.email));
+    return;
+  }
+
+  if (url.pathname === "/auth/v1/user" && request.method === "GET") {
+    const user = userFromAuthorization(request);
+    if (!user) {
+      sendJson(response, 401, {
+        code: "bad_jwt",
+        error_code: "bad_jwt",
+        message: "invalid claim: missing sub claim",
+        msg: "invalid claim: missing sub claim",
+      });
+      return;
+    }
+    sendJson(response, 200, user);
+    return;
+  }
+
+  if (url.pathname === "/auth/v1/logout" && request.method === "POST") {
+    response.writeHead(204);
+    response.end();
+    return;
+  }
+
   if (url.pathname === "/rest/v1/faqs") {
     sendJson(response, 200, selectFaqs(url));
     return;
@@ -164,5 +255,5 @@ const server = createServer(async (request, response) => {
 });
 
 server.listen(PORT, "127.0.0.1", () => {
-  console.log(`[faq-mock] listening on http://127.0.0.1:${PORT}`);
+  console.log(`[supabase-mock] listening on http://127.0.0.1:${PORT}`);
 });

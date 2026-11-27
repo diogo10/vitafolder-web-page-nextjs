@@ -10,18 +10,20 @@ This project is licensed under the [MIT License](LICENSE).
 
 ## Pages
 
-| Route            | Live URL                                                                                                                                                                                              | Description                                                                                                                                                                                                                                                                                                                                         |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/`              | [https://housemira.com](https://housemira.com)                                                                                                                                                        | Marketing landing page. Hero with phone mockup, feature grid (Smart Reminders, Shared Calendar, Private Family Circles), How It Works, CTA, Footer.                                                                                                                                                                                                 |
-| `/join-family`   | [https://housemira.com/join-family](https://housemira.com/join-family) — try with demo code: [https://housemira.com/join-family?code=FAMILY-1234](https://housemira.com/join-family?code=FAMILY-1234) | Invite acceptance flow. Reads optional `code`/`inviteCode` and `email` search params, validates input with Zod (`email` + optional `inviteCode`), and submits via a Server Action. Has dedicated `loading.tsx` / `error.tsx`.                                                                                                                       |
-| `/login`         | [https://housemira.com/login](https://housemira.com/login)                                                                                                                                            | Email/password sign-in with Supabase Auth. The `loginAction` Server Action validates input with Zod and calls `supabase.auth.signInWithPassword` using the anon key on the server only; auth cookies are written via `@supabase/ssr`. The landing header, hero, and CTA “Get Started” buttons link here. Has dedicated `loading.tsx` / `error.tsx`. |
-| `/invite-family` | [https://housemira.com/invite-family](https://housemira.com/invite-family)                                                                                                                            | Invite sending flow. `InviteFamilyForm` collects `to`, `locale`, `inviterName`, `familyName`, `inviteCode` and submits via the `sendInviteAction` Server Action, which POSTs the payload to the Supabase `resend-email-v1` Edge Function. Has dedicated `loading.tsx` / `error.tsx`.                                                                |
-| `/privacy`       | [https://housemira.com/privacy](https://housemira.com/privacy)                                                                                                                                        | Privacy Policy page. Shared landing `Header`/`Footer` plus `PrivacyContent` (content from `src/features/privacy/lib/content.ts`).                                                                                                                                                                                                                   |
-| `/terms`         | [https://housemira.com/terms](https://housemira.com/terms)                                                                                                                                            | Terms and Conditions page. Shared landing `Header`/`Footer` plus `TermsContent` (content from `src/features/terms/lib/content.ts`).                                                                                                                                                                                                                 |
+| Route            | Live URL                                                                                                                                                                                              | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`              | [https://housemira.com](https://housemira.com)                                                                                                                                                        | Marketing landing page. Hero with phone mockup, feature grid (Smart Reminders, Shared Calendar, Private Family Circles), How It Works, CTA, Footer.                                                                                                                                                                                                                                                                                                                                                                     |
+| `/join-family`   | [https://housemira.com/join-family](https://housemira.com/join-family) — try with demo code: [https://housemira.com/join-family?code=FAMILY-1234](https://housemira.com/join-family?code=FAMILY-1234) | Invite acceptance flow. Reads optional `code`/`inviteCode` and `email` search params, validates input with Zod (`email` + optional `inviteCode`), and submits via a Server Action. Has dedicated `loading.tsx` / `error.tsx`.                                                                                                                                                                                                                                                                                           |
+| `/login`         | [https://housemira.com/login](https://housemira.com/login)                                                                                                                                            | Email/password sign-in with Supabase Auth. The `loginAction` Server Action validates input with Zod and calls `supabase.auth.signInWithPassword` using the anon key on the server only; auth cookies are written via `@supabase/ssr`. After sign-in the form opens the `next` destination (default `/dashboard`), so `/dashboard` visitors sent to `/login?next=%2Fdashboard` land back on the dashboard. The landing header, hero, and CTA “Get Started” buttons link here. Has dedicated `loading.tsx` / `error.tsx`. |
+| `/signup`        | [https://housemira.com/signup](https://housemira.com/signup)                                                                                                                                          | Public email/password account creation via `signupAction`. Zod validates and caps email (254 chars) / password (72 chars); a hidden honeypot plus the invite flow’s rate limiter and optional Turnstile gate protect the action. Opens `/dashboard` when Supabase returns a session, otherwise asks the user to confirm their email. Has dedicated `loading.tsx` / `error.tsx`.                                                                                                                                         |
+| `/dashboard`     | [https://housemira.com/dashboard](https://housemira.com/dashboard)                                                                                                                                    | Session-gated dashboard. The Server Component calls `supabase.auth.getUser()` (errors are logged server-side), renders the sidebar with logout, and redirects unauthenticated visitors to `/login?next=%2Fdashboard`. Has dedicated `loading.tsx` / `error.tsx`.                                                                                                                                                                                                                                                        |
+| `/invite-family` | [https://housemira.com/invite-family](https://housemira.com/invite-family)                                                                                                                            | Invite sending flow. `InviteFamilyForm` collects `to`, `locale`, `inviterName`, `familyName`, `inviteCode` and submits via the `sendInviteAction` Server Action, which POSTs the payload to the Supabase `resend-email-v1` Edge Function. Has dedicated `loading.tsx` / `error.tsx`.                                                                                                                                                                                                                                    |
+| `/privacy`       | [https://housemira.com/privacy](https://housemira.com/privacy)                                                                                                                                        | Privacy Policy page. Shared landing `Header`/`Footer` plus `PrivacyContent` (content from `src/features/privacy/lib/content.ts`).                                                                                                                                                                                                                                                                                                                                                                                       |
+| `/terms`         | [https://housemira.com/terms](https://housemira.com/terms)                                                                                                                                            | Terms and Conditions page. Shared landing `Header`/`Footer` plus `TermsContent` (content from `src/features/terms/lib/content.ts`).                                                                                                                                                                                                                                                                                                                                                                                     |
 
 Redirects (see `next.config.ts`): `/notes`, `/notes/:path*`, `/pricing`, `/pricing/:path*` → `/` (permanent). Shared Notes was sunset (PR #14) and the pricing page was removed, so stale bookmarks/crawlers land on home instead of a 404.
 
-Every async route group ships `loading.tsx` + `error.tsx` (root + `join-family` + `invite-family` + `login`).
+Every async route group ships `loading.tsx` + `error.tsx` (root + `join-family` + `invite-family` + `login` + `signup` + `dashboard`).
 
 ## Tech stack
 
@@ -52,13 +54,16 @@ src/components/      # shared UI (PascalCase.tsx, co-located *.test.tsx)
 src/features/<name>/ # feature slice: components/, hooks/, lib/, schemas.ts, actions.ts
   join-family/       # JoinFamilyForm (+ Server Action), schemas, invite-code helpers
   invite-family/     # InviteFamilyForm + sendInviteAction Server Action + resend-email-v1 Edge Function client
-  auth/              # LoginForm + loginAction, schemas, safe auth-error mapping
+  auth/              # LoginForm/SignupForm + login/signup/logout actions, schemas, safe auth-error mapping
+  dashboard/         # DashboardSidebar (navigation + logout)
   privacy/           # PrivacyContent + lib/content.ts
   terms/             # TermsContent + lib/content.ts
-src/lib/             # env.ts (Zod-validated env), utils.ts (cn(), formatDate)
+src/lib/             # env.ts (Zod-validated env), utils.ts (cn(), formatDate), rate-limit-key.ts
+  supabase/          # server client + protected-route session refresh
+middleware.ts        # Next entry point (matcher: /dashboard) calling updateSupabaseSession
 public/              # static assets
-e2e/                 # Playwright specs (home, join-family, invite-family, support, privacy, terms)
-  fixtures/          # local PostgREST mock (e2e/fixtures/supabase-mock.mjs)
+e2e/                 # Playwright specs (home, login, signup, join-family, invite-family, support, privacy, terms)
+  fixtures/          # local Supabase mock (e2e/fixtures/supabase-mock.mjs)
 ```
 
 Rules (from `AGENTS.md`): keep routes thin, business logic in `src/features/<name>/` or `src/lib/`; one component per file; `@/*` alias maps to `src/*` (never deep `../../../` imports); `strict: true` with `noUnusedLocals`/`noUnusedParameters`, no `any` (use `unknown` + narrowing), prefer `type` over `interface`; validate external input and env with Zod (`src/lib/env.ts`, never `process.env` inline); use `next/link`, `next/image` (always `alt` + size), `next/font`; export `metadata`/`generateMetadata` per route, no manual `<head>`; Tailwind + `cn()` mobile-first, no inline `style` unless dynamic, global CSS only in `app/globals.css`.
@@ -83,6 +88,7 @@ SUPABASE_JOIN_FUNCTION_NAME=join-family-v1
 # Shared secret for join-family-v1 trusted-backend mode (server-only,
 # sent as x-join-secret; must match the secret configured on the function).
 JOIN_FAMILY_SHARED_SECRET=[YOUR_JOIN_SECRET]
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=[YOUR_TURNSTILE_SITE_KEY]
 TURNSTILE_SECRET_KEY=[YOUR_TURNSTILE_SECRET]
 UPSTASH_REDIS_REST_URL=https://your-db.upstash.io
 UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
@@ -92,11 +98,18 @@ UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
 with a clear message when it is missing, instead of silently targeting a
 hardcoded project. Empty strings are treated as unset
 (`src/lib/env.ts`). `SUPABASE_ANON_KEY` is optional at startup but required
-for `/login` (the action fails closed with a generic message when it is
-missing) and to actually send invites — without it the invite Server Action
-returns the generic `Could not send invite. Try again.` error before any
-network call (the missing-key detail is logged server-side with
-`console.error` only).
+for `/login`, `/signup`, and `/dashboard` (the actions fail closed with a
+generic message when it is missing) and to actually send invites — without it
+the invite Server Action returns the generic `Could not send invite. Try
+again.` error before any network call (the missing-key detail is logged
+server-side with `console.error` only). `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
+renders the Cloudflare widget in the signup and invite forms;
+`TURNSTILE_SECRET_KEY` verifies the token server-side. Set both together: if
+the secret is configured without a site key, submissions fail closed.
+`UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` move both rate limiters
+to shared Redis. `middleware.ts` (with the implementation in
+`src/lib/supabase/middleware.ts`) refreshes the Supabase session for
+`/dashboard` on every request.
 
 ## Invite email authorization & abuse protection
 
@@ -112,9 +125,11 @@ Sending email is an abuse vector, so the `/invite-family` flow is layered:
 - **Bot gate (Turnstile) with production fail-closed.** When
   `TURNSTILE_SECRET_KEY` is set, the action requires a valid Cloudflare
   Turnstile token (verified server-side in
-  `src/features/invite-family/lib/verify-turnstile.ts`) before sending.
-  When no secret is configured, the action fails closed in production
-  (generic error, server-side `console.error`) and only sends in dev/test.
+  `src/features/invite-family/lib/verify-turnstile.ts`) before sending. The
+  form renders the widget from `src/components/TurnstileWidget.tsx` when
+  `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is configured. When no secret is
+  configured, the action fails closed in production (generic error,
+  server-side `console.error`) and only sends in dev/test.
   Do not expose the form publicly until Turnstile (or app-level session
   auth) is enforced.
 - **Authorization boundary = the Supabase `resend-email-v1` Edge Function.**
@@ -144,6 +159,8 @@ Sending email is an abuse vector, so the `/invite-family` flow is layered:
   a pass-through value from an untrusted proxy. When no IP can be resolved
   the action fails closed (generic rate-limit error) instead of sharing a
   global bucket.
+  The default namespace is `invite`; signup uses `signup`, so the two
+  budgets never consume each other.
 - **Error hygiene:** Edge Function status/detail is logged server-side with
   `console.error` (truncated to 500 chars) and never surfaced — clients only
   receive `Could not send invite. Try again.` (including when
@@ -169,6 +186,35 @@ Sending email is an abuse vector, so the `/invite-family` flow is layered:
   If that spec fails (edge returns 200 for anon-key-only calls or never 429s
   under burst), keep `/invite-family` internal until the Edge Function is hardened.
 
+## Public signup abuse protection
+
+`/signup` reuses the invite flow’s abuse utilities so public account creation
+cannot be hammered:
+
+- **Rate limiting first:** `signupAction` calls the same
+  `checkInviteRateLimitForKey` limiter (5 requests/minute) with the
+  `signup` namespace **before** Turnstile verification. Shared Upstash Redis
+  is used when configured; otherwise the in-memory limiter applies to a
+  single-instance rollout. When no request IP/cookie can be resolved the
+  action fails closed with a generic rate-limit error instead of falling back
+  to the email address or a shared global bucket.
+- **Bot gate (Turnstile):** the form renders Cloudflare's widget via
+  `src/components/TurnstileWidget.tsx` when `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
+  is set, and passes the resulting token to `signupAction`. When
+  `TURNSTILE_SECRET_KEY` is configured the token is required and verified
+  with `verifyTurnstileToken` (the invite flow's verifier); a missing or
+  invalid token fails closed. Tokens are single-use, so the form remounts the
+  widget after a failed submit.
+- **Honeypot:** a hidden `website` input gives bots a fake success without
+  creating an account.
+- **Length caps:** `signupSchema` rejects emails over 254 characters and
+  passwords over 72 characters (and still requires at least 8), limiting
+  oversized payloads before they reach Supabase.
+- **Session refresh:** `middleware.ts` calls
+  `src/lib/supabase/middleware.ts`, which runs `supabase.auth.getUser()` for
+  `/dashboard`, forwards refreshed auth cookies, and redirects invalid
+  sessions to `/login?next=...`.
+
 ## Commands
 
 ```bash
@@ -190,7 +236,7 @@ After any code change, run in order: `lint` → `typecheck` → `test`. For rout
 ## Testing
 
 - Unit/integration: Vitest (jsdom) + Testing Library + user-event. Co-located `*.test.tsx` next to source, `src/lib/*.test.ts` for utils. Query by role/label (`getByRole`, `getByLabelText`); mock server boundaries (`fetch`, Server Actions), not internals. Required coverage: pure utils, Server Actions (happy path + Zod rejection + auth), critical UI states (loading/empty/error). Coverage thresholds: 80% lines/functions/branches.
-- E2E: specs in `e2e/*.spec.ts` (home, login, join-family, invite-family, support, privacy, terms) run against `npm run build && npm start` in CI. Never hit real third-party APIs — seed local data or mock. `playwright.config.ts` starts its own server on `:3100` with a credential-free environment (empty `JOIN_FAMILY_SHARED_SECRET` / `TURNSTILE_SECRET_KEY` / Upstash vars), so the specs can never reach a live Supabase, Turnstile, or Upstash endpoint — not even through a local `.env.local`. `SUPABASE_URL` points at the local mock in `e2e/fixtures/supabase-mock.mjs`, which serves the `/support` FAQ fixtures and a password-grant `/auth/v1/token` stand-in for `/login`.
+- E2E: specs in `e2e/*.spec.ts` (home, login, signup, join-family, invite-family, support, privacy, terms) run against `npm run build && npm start` in CI. Never hit real third-party APIs — seed local data or mock. `playwright.config.ts` starts its own server on `:3100` with a credential-free environment (empty `JOIN_FAMILY_SHARED_SECRET` / `TURNSTILE_SECRET_KEY` / Upstash vars), so the specs can never reach a live Supabase, Turnstile, or Upstash endpoint — not even through a local `.env.local`. `SUPABASE_URL` points at the local mock in `e2e/fixtures/supabase-mock.mjs`, which serves the `/support` FAQ fixtures plus the Supabase Auth stand-ins used by `/login` (`POST /auth/v1/token`), `/signup` (`POST /auth/v1/signup`), `/dashboard` (`GET /auth/v1/user`), and logout (`POST /auth/v1/logout`).
 
 ## Contributing
 

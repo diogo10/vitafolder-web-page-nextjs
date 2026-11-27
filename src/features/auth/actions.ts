@@ -1,9 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { executeSignupAction, type SignupActionResult } from "./lib/signup-action-core";
 import { getLoginErrorMessage } from "./lib/auth-errors";
 import { loginSchema } from "./schemas";
+
+export type { SignupActionErrors, SignupActionResult } from "./lib/signup-action-core";
 
 export type LoginActionErrors = {
   email?: string;
@@ -43,4 +47,36 @@ export async function loginAction(input: unknown): Promise<LoginActionResult> {
   revalidatePath("/", "layout");
 
   return { ok: true };
+}
+
+/**
+ * Public signup Server Action (single-arg).
+ *
+ * Rate-limit key injection and Turnstile stubs live in the non-`"use server"`
+ * core (`lib/signup-action-core.ts`) so clients cannot pass overrides and
+ * evade the abuse controls.
+ */
+export async function signupAction(input: unknown): Promise<SignupActionResult> {
+  return executeSignupAction(input);
+}
+
+export async function logoutAction(): Promise<void> {
+  try {
+    const supabase = await createSupabaseServerClient();
+
+    if (supabase) {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error(`[auth] sign-out failed: ${error.message}`);
+      }
+    }
+  } catch (error) {
+    // Never trap the user on a protected page because the provider errored.
+    console.error(
+      `[auth] sign-out failed: ${error instanceof Error ? error.message : String(error)}`
+    );
+  } finally {
+    revalidatePath("/", "layout");
+    redirect("/login");
+  }
 }
