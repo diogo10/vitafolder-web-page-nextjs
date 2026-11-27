@@ -18,6 +18,7 @@ describe("DashboardSidebar", () => {
 
     expect(screen.getByRole("navigation", { name: /dashboard/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Dashboard" })).toHaveAttribute("href", "/dashboard");
+    expect(screen.getByRole("link", { name: "Notes" })).toHaveAttribute("href", "/dashboard/notes");
     expect(screen.getByRole("button", { name: /logout/i })).toBeInTheDocument();
   });
 
@@ -31,6 +32,14 @@ describe("DashboardSidebar", () => {
     pathnameMock.mockReturnValue("/settings");
     render(<DashboardSidebar />);
 
+    expect(screen.getByRole("link", { name: "Dashboard" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("marks the notes route active without marking the dashboard active", () => {
+    pathnameMock.mockReturnValue("/dashboard/notes");
+    render(<DashboardSidebar />);
+
+    expect(screen.getByRole("link", { name: "Notes" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Dashboard" })).not.toHaveAttribute("aria-current");
   });
 });

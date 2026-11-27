@@ -6,7 +6,57 @@ import { Logo } from "@/components/landing/Logo";
 import { logoutAction } from "@/features/auth/actions";
 import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [{ label: "Dashboard", href: "/dashboard" }];
+type NavIconName = "dashboard" | "notes";
+
+type NavItem = {
+  label: string;
+  href: string;
+  icon: NavIconName;
+};
+
+const NAV_ITEMS: NavItem[] = [
+  { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
+  { label: "Notes", href: "/dashboard/notes", icon: "notes" },
+];
+
+function NavIcon({ name }: { name: NavIconName }) {
+  if (name === "notes") {
+    return (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path
+          d="M4 2.5h5.5L12.5 5.5v8a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1Z"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M9.5 2.5v3h3M6 8h4M6 10.5h4"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="2" y="2" width="5" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.4" />
+      <rect x="9" y="2" width="5" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.4" />
+      <rect x="2" y="9" width="5" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.4" />
+      <rect x="9" y="9" width="5" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
+/** Exact match for /dashboard so nested routes don't light up the dashboard item. */
+function isActiveRoute(pathname: string, href: string): boolean {
+  if (href === "/dashboard") {
+    return pathname === href;
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function DashboardSidebar() {
   const pathname = usePathname();
@@ -22,7 +72,7 @@ export function DashboardSidebar() {
       <nav aria-label="Dashboard" className="px-3 pb-4 md:flex-1 md:pb-6">
         <ul className="flex gap-1 md:flex-col">
           {NAV_ITEMS.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const isActive = isActiveRoute(pathname, item.href);
             return (
               <li key={item.href}>
                 <Link
@@ -35,44 +85,7 @@ export function DashboardSidebar() {
                       : "text-mist hover:bg-brand-soft hover:text-brand-deep"
                   )}
                 >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <rect
-                      x="2"
-                      y="2"
-                      width="5"
-                      height="5"
-                      rx="1.2"
-                      stroke="currentColor"
-                      strokeWidth="1.4"
-                    />
-                    <rect
-                      x="9"
-                      y="2"
-                      width="5"
-                      height="5"
-                      rx="1.2"
-                      stroke="currentColor"
-                      strokeWidth="1.4"
-                    />
-                    <rect
-                      x="2"
-                      y="9"
-                      width="5"
-                      height="5"
-                      rx="1.2"
-                      stroke="currentColor"
-                      strokeWidth="1.4"
-                    />
-                    <rect
-                      x="9"
-                      y="9"
-                      width="5"
-                      height="5"
-                      rx="1.2"
-                      stroke="currentColor"
-                      strokeWidth="1.4"
-                    />
-                  </svg>
+                  <NavIcon name={item.icon} />
                   {item.label}
                 </Link>
               </li>
